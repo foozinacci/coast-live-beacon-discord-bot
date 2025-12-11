@@ -11,6 +11,8 @@ A custom Discord bot that monitors Twitch streamers and sends notifications when
 - 👥 Configurable role mentions per server
 - 🎨 Rich embed notifications with stream details
 - ⚡ Easy management with simple commands
+- 📊 **Analytics tracking** - Track stream frequency, games, peak times, and viewer stats
+- 🔐 **Permission-based commands** - Members can add themselves, moderators manage everything
 - 💰 Completely free and open source
 
 ## Prerequisites
@@ -55,22 +57,42 @@ A custom Discord bot that monitors Twitch streamers and sends notifications when
 ### 3. Install and Configure
 
 1. Clone this repository:
+
+**On Windows (PowerShell):**
+```powershell
+git clone https://github.com/foozinacci/coast-live-beacon-discord-bot.git
+cd coast-live-beacon-discord-bot
+```
+
+**On Mac/Linux:**
 ```bash
-git clone https://github.com/yourusername/coast-discord-bot.git
-cd coast-discord-bot
+git clone https://github.com/foozinacci/coast-live-beacon-discord-bot.git
+cd coast-live-beacon-discord-bot
 ```
 
 2. Install dependencies:
-```bash
+```powershell
 npm install
 ```
 
 3. Create a `.env` file:
+
+**On Windows (PowerShell):**
+```powershell
+Copy-Item .env.example .env
+```
+
+**On Mac/Linux:**
 ```bash
 cp .env.example .env
 ```
 
 4. Edit the `.env` file with your credentials:
+
+**On Windows:** Right-click `.env` → Open with Notepad
+
+**On Mac/Linux:** `nano .env` or your preferred editor
+
 ```env
 # Discord Configuration
 DISCORD_TOKEN=your_discord_bot_token_here
@@ -84,18 +106,29 @@ TWITCH_CLIENT_SECRET=your_twitch_client_secret_here
 CHECK_INTERVAL=60000
 ```
 
-**Note:** You no longer need to set `NOTIFICATION_CHANNEL_ID` or `WIZARDS_ROLE_ID` in the `.env` file - each server configures these separately using bot commands!
+**Important:**
+- Never commit your `.env` file to git (it's already in `.gitignore`)
+- Notification channels and roles are configured per-server using Discord commands (not in `.env`)
 
 ### 4. Run the Bot
 
-**Development:**
-```bash
+**On Windows (PowerShell):**
+```powershell
 npm start
 ```
 
-**Production (keeps running):**
-```bash
+**Keep it running 24/7 on Windows with PM2:**
+```powershell
 npm install -g pm2
+pm2 start src/index.js --name live-beacon
+pm2 save
+pm2 startup
+```
+
+**On Mac/Linux:**
+```bash
+npm start
+# Or with PM2:
 pm2 start src/index.js --name live-beacon
 pm2 save
 ```
@@ -119,28 +152,43 @@ Each Discord server needs to be configured independently. Use these commands:
 
 ### Add Streamers
 
-Anyone can add streamers to monitor:
+**Regular Members** can add themselves:
+```
+!addme hamhocks42
+```
 
+**Moderators** can add anyone:
 ```
 !addstreamer shroud
 !addstreamer pokimane
+```
+
+**Anyone** can view the list:
+```
 !liststreamer
 ```
 
 ## Commands
 
-### Streamer Management
-- `!addstreamer <username>` - Add a Twitch streamer to monitor
-- `!removestreamer <username>` - Remove a streamer from monitoring
-- `!liststreamer` - List all monitored streamers for this server
+### Everyone Can Use
+- `!addme <your_twitch_username>` - Add yourself to monitoring (self-service)
+- `!liststreamer` - View all monitored streamers for this server
+- `!help` - Show help message with all commands
+- `!config` - View current server configuration
 
-### Server Configuration (Admin Only)
+### Moderators Only
+Requires **Manage Messages**, **Moderate Members**, or **Administrator** permission:
+- `!addstreamer <username>` - Add any Twitch streamer to monitor
+- `!removestreamer <username>` - Remove a streamer from monitoring
+- `!stats <username>` - View detailed analytics for a streamer (total streams, peak viewers, top games, peak hours)
+- `!leaderboard [metric]` - View top streamers leaderboard
+  - Metrics: `peakviewers`, `avgviewers`, `streams`, `duration`
+  - Example: `!leaderboard peakviewers`
+
+### Administrators Only
+Requires **Administrator** permission:
 - `!setchannel` - Set notification channel (run in the desired channel)
 - `!setrole @Role` - Set role to mention when streams go live
-- `!config` - Show current server configuration
-
-### Other
-- `!help` - Show help message with all commands
 
 ## Multi-Server Support
 
@@ -190,7 +238,9 @@ Want to let others use your bot?
 
 ## Data Storage
 
-Bot data is stored in `data/guilds.json`:
+Bot data is stored in the `data/` directory:
+
+**`data/guilds.json`** - Server configurations:
 ```json
 {
   "guilds": {
@@ -204,7 +254,27 @@ Bot data is stored in `data/guilds.json`:
 }
 ```
 
-This file is automatically created and managed. Each server's configuration is isolated.
+**`data/analytics.json`** - Stream analytics:
+```json
+{
+  "sessions": {
+    "streamer1": [
+      {
+        "sessionId": "streamer1_1234567890",
+        "startTime": 1234567890,
+        "endTime": 1234578900,
+        "game": "Just Chatting",
+        "title": "Stream Title",
+        "peakViewers": 150,
+        "viewerSnapshots": [...]
+      }
+    ]
+  },
+  "activeStreams": {}
+}
+```
+
+These files are automatically created and managed. Each server's configuration is isolated.
 
 ## Troubleshooting
 
@@ -219,9 +289,13 @@ This file is automatically created and managed. Each server's configuration is i
 - Check bot has "Mention Everyone" permission
 - Verify streamers are added with `!liststreamer`
 
-**Commands say "Admin Only":**
-- Only users with Administrator permission can run `!setchannel`, `!setrole`, and `!config`
-- Anyone can use `!addstreamer`, `!removestreamer`, `!liststreamer`, `!help`
+**Commands say "Only moderators can...":**
+- `!addstreamer`, `!removestreamer`, `!stats`, `!leaderboard` require moderator permissions
+- Regular users should use `!addme <twitch_username>` to add themselves
+- Anyone can use `!liststreamer`, `!help`, and `!config`
+
+**Commands say "You need Administrator permissions...":**
+- Only server administrators can run `!setchannel` and `!setrole`
 
 **Bot offline after PC restart:**
 - If using pm2: Run `pm2 resurrect` or `pm2 start live-beacon`
