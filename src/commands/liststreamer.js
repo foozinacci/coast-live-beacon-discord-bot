@@ -10,7 +10,7 @@ module.exports = {
     const streamers = storage.getStreamers(guildId);
 
     if (streamers.length === 0) {
-      return message.reply('No streamers are currently being monitored on this server. Use `!addstreamer <username>` to add one.');
+      return message.reply('No streamers are currently being monitored on this server. Use `!addme <your_username>` to add yourself or ask a moderator!');
     }
 
     const embed = new EmbedBuilder()

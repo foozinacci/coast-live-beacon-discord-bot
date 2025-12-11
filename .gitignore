@@ -9,8 +9,7 @@ node_modules/
 logs/
 
 # Data files
-streamers.json
-stream_status.json
+data/
 
 # OS files
 .DS_Store

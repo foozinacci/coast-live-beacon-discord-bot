@@ -19,7 +19,7 @@ module.exports = {
 
     const streamersText = config.streamers.length > 0
       ? config.streamers.join(', ')
-      : 'None (use `!addstreamer <username>`)';
+      : 'None (use `!addme <your_username>` or moderators can use `!addstreamer`)';
 
     const embed = new EmbedBuilder()
       .setColor('#9146FF')

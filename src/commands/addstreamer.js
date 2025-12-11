@@ -25,7 +25,7 @@ module.exports = {
     }
 
     if (!isModerator) {
-      return message.reply(`❌ Only moderators can add streamers.\n\nIf you want to be added to the monitoring list, ask a moderator!`);
+      return message.reply(`❌ Only moderators can use this command.\n\nUse \`!addme <your_twitch_username>\` to add yourself!`);
     }
 
     const added = storage.addStreamer(guildId, userInfo.login);
