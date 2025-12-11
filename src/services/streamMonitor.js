@@ -1,12 +1,14 @@
 const { EmbedBuilder } = require('discord.js');
 const TwitchClient = require('../api/twitchClient');
 const StreamerStorage = require('../utils/streamerStorage');
+const AnalyticsStorage = require('../utils/analyticsStorage');
 
 class StreamMonitor {
   constructor(client) {
     this.client = client;
     this.twitchClient = new TwitchClient();
     this.streamerStorage = new StreamerStorage();
+    this.analyticsStorage = new AnalyticsStorage();
     this.liveStreams = new Set();
     this.checkInterval = parseInt(process.env.CHECK_INTERVAL) || 60000;
     this.intervalId = null;
@@ -45,15 +47,21 @@ class StreamMonitor {
         const userLogin = stream.user_login.toLowerCase();
 
         if (!this.liveStreams.has(userLogin)) {
+          this.analyticsStorage.startSession(userLogin, stream);
           await this.sendNotifications(stream);
           this.liveStreams.add(userLogin);
+        } else {
+          this.analyticsStorage.updateSession(userLogin, stream.viewer_count);
         }
       }
 
       for (const userLogin of this.liveStreams) {
         if (!currentlyLive.has(userLogin)) {
           this.liveStreams.delete(userLogin);
-          console.log(`📴 ${userLogin} went offline`);
+          const session = this.analyticsStorage.endSession(userLogin);
+          if (session) {
+            console.log(`📴 ${userLogin} went offline - Duration: ${Math.round(session.duration / 1000 / 60)}min, Peak: ${session.peakViewers} viewers`);
+          }
         }
       }
     } catch (error) {
