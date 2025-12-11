@@ -15,7 +15,7 @@ module.exports = {
       .addFields(
         {
           name: '📺 For Everyone',
-          value: '`!addstreamer <your_username>` - Add YOUR Twitch account\n`!liststreamer` - View monitored streamers\n`!help` - Show this help message',
+          value: '`!liststreamer` - View monitored streamers\n`!help` - Show this help message\n\n**To get added:** Link Twitch in Discord (Settings → Connections), then ask a moderator!',
           inline: false
         },
         {
@@ -29,7 +29,7 @@ module.exports = {
           inline: false
         }
       )
-      .setFooter({ text: isModerator ? 'LIVE BEACON by COAST | You have moderator access' : 'LIVE BEACON by COAST | Members can only add themselves' })
+      .setFooter({ text: isModerator ? 'LIVE BEACON by COAST | You have moderator access' : 'LIVE BEACON by COAST | Ask a mod to get added!' })
       .setTimestamp();
 
     return message.reply({ embeds: [embed] });
