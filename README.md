@@ -12,7 +12,7 @@ A custom Discord bot that monitors Twitch streamers and sends notifications when
 - 🎨 Rich embed notifications with stream details
 - ⚡ Easy management with simple commands
 - 📊 **Analytics tracking** - Track stream frequency, games, peak times, and viewer stats
-- 🔐 **Permission-based commands** - Members can add themselves, moderators manage everything
+- 🔐 **Permission-based commands** - Moderators control streamer list, everyone can view
 - 💰 Completely free and open source
 
 ## Prerequisites
@@ -150,14 +150,9 @@ Each Discord server needs to be configured independently. Use these commands:
 3. **Check your configuration:**
    - Run: `!config`
 
-### Add Streamers
+### Add Streamers (Moderators Only)
 
-**Regular Members** can add themselves:
-```
-!addme hamhocks42
-```
-
-**Moderators** can add anyone:
+**Moderators** add streamers:
 ```
 !addstreamer shroud
 !addstreamer pokimane
@@ -168,10 +163,11 @@ Each Discord server needs to be configured independently. Use these commands:
 !liststreamer
 ```
 
+**Note:** Regular members should DM or ask moderators to add their Twitch username.
+
 ## Commands
 
 ### Everyone Can Use
-- `!addme <your_twitch_username>` - Add yourself to monitoring (self-service)
 - `!liststreamer` - View all monitored streamers for this server
 - `!help` - Show help message with all commands
 - `!config` - View current server configuration
@@ -291,7 +287,7 @@ These files are automatically created and managed. Each server's configuration i
 
 **Commands say "Only moderators can...":**
 - `!addstreamer`, `!removestreamer`, `!stats`, `!leaderboard` require moderator permissions
-- Regular users should use `!addme <twitch_username>` to add themselves
+- Regular users should ask a moderator to add their Twitch username
 - Anyone can use `!liststreamer`, `!help`, and `!config`
 
 **Commands say "You need Administrator permissions...":**
