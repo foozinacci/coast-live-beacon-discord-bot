@@ -3,7 +3,7 @@ const path = require('path');
 
 class StreamerStorage {
   constructor() {
-    this.filePath = path.join(__dirname, '../../data/streamers.json');
+    this.filePath = path.join(__dirname, '../../data/guilds.json');
     this.ensureDataFile();
   }
 
@@ -15,59 +15,124 @@ class StreamerStorage {
     }
 
     if (!fs.existsSync(this.filePath)) {
-      fs.writeFileSync(this.filePath, JSON.stringify({ streamers: [] }, null, 2));
+      fs.writeFileSync(this.filePath, JSON.stringify({ guilds: {} }, null, 2));
     }
   }
 
-  getStreamers() {
+  getData() {
     try {
       const data = fs.readFileSync(this.filePath, 'utf8');
       const parsed = JSON.parse(data);
-      return parsed.streamers || [];
+      return parsed.guilds || {};
     } catch (error) {
-      console.error('Error reading streamers file:', error);
-      return [];
+      console.error('Error reading guilds file:', error);
+      return {};
     }
   }
 
-  addStreamer(username) {
-    const streamers = this.getStreamers();
+  saveData(guilds) {
+    try {
+      fs.writeFileSync(
+        this.filePath,
+        JSON.stringify({ guilds }, null, 2),
+        'utf8'
+      );
+    } catch (error) {
+      console.error('Error saving guilds file:', error);
+      throw error;
+    }
+  }
+
+  getGuildConfig(guildId) {
+    const guilds = this.getData();
+    if (!guilds[guildId]) {
+      guilds[guildId] = {
+        streamers: [],
+        notificationChannelId: null,
+        roleId: null
+      };
+      this.saveData(guilds);
+    }
+    return guilds[guildId];
+  }
+
+  getStreamers(guildId) {
+    const config = this.getGuildConfig(guildId);
+    return config.streamers || [];
+  }
+
+  getAllStreamers() {
+    const guilds = this.getData();
+    const allStreamers = new Set();
+
+    Object.values(guilds).forEach(config => {
+      if (config.streamers) {
+        config.streamers.forEach(s => allStreamers.add(s.toLowerCase()));
+      }
+    });
+
+    return Array.from(allStreamers);
+  }
+
+  addStreamer(guildId, username) {
+    const guilds = this.getData();
+    const config = this.getGuildConfig(guildId);
     const lowerUsername = username.toLowerCase();
 
-    if (streamers.includes(lowerUsername)) {
+    if (config.streamers.includes(lowerUsername)) {
       return false;
     }
 
-    streamers.push(lowerUsername);
-    this.saveStreamers(streamers);
+    config.streamers.push(lowerUsername);
+    guilds[guildId] = config;
+    this.saveData(guilds);
     return true;
   }
 
-  removeStreamer(username) {
-    const streamers = this.getStreamers();
+  removeStreamer(guildId, username) {
+    const guilds = this.getData();
+    const config = this.getGuildConfig(guildId);
     const lowerUsername = username.toLowerCase();
-    const index = streamers.indexOf(lowerUsername);
+    const index = config.streamers.indexOf(lowerUsername);
 
     if (index === -1) {
       return false;
     }
 
-    streamers.splice(index, 1);
-    this.saveStreamers(streamers);
+    config.streamers.splice(index, 1);
+    guilds[guildId] = config;
+    this.saveData(guilds);
     return true;
   }
 
-  saveStreamers(streamers) {
-    try {
-      fs.writeFileSync(
-        this.filePath,
-        JSON.stringify({ streamers }, null, 2),
-        'utf8'
-      );
-    } catch (error) {
-      console.error('Error saving streamers file:', error);
-      throw error;
-    }
+  setNotificationChannel(guildId, channelId) {
+    const guilds = this.getData();
+    const config = this.getGuildConfig(guildId);
+    config.notificationChannelId = channelId;
+    guilds[guildId] = config;
+    this.saveData(guilds);
+  }
+
+  setRole(guildId, roleId) {
+    const guilds = this.getData();
+    const config = this.getGuildConfig(guildId);
+    config.roleId = roleId;
+    guilds[guildId] = config;
+    this.saveData(guilds);
+  }
+
+  getNotificationChannel(guildId) {
+    const config = this.getGuildConfig(guildId);
+    return config.notificationChannelId;
+  }
+
+  getRole(guildId) {
+    const config = this.getGuildConfig(guildId);
+    return config.roleId;
+  }
+
+  getAllGuilds() {
+    return this.getData();
   }
 }
 

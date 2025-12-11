@@ -10,13 +10,14 @@ module.exports = {
 
     const username = args[0].toLowerCase();
     const storage = new StreamerStorage();
+    const guildId = message.guild.id;
 
-    const removed = storage.removeStreamer(username);
+    const removed = storage.removeStreamer(guildId, username);
 
     if (removed) {
-      return message.reply(`✅ Removed **${username}** from the monitoring list.`);
+      return message.reply(`✅ Removed **${username}** from this server's monitoring list.`);
     } else {
-      return message.reply(`⚠️  **${username}** was not found in the monitoring list.`);
+      return message.reply(`⚠️  **${username}** was not found in this server's monitoring list.`);
     }
   },
 };

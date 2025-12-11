@@ -6,10 +6,11 @@ module.exports = {
   description: 'List all monitored Twitch streamers',
   async execute(message, args) {
     const storage = new StreamerStorage();
-    const streamers = storage.getStreamers();
+    const guildId = message.guild.id;
+    const streamers = storage.getStreamers(guildId);
 
     if (streamers.length === 0) {
-      return message.reply('No streamers are currently being monitored. Use `!addstreamer <username>` to add one.');
+      return message.reply('No streamers are currently being monitored on this server. Use `!addstreamer <username>` to add one.');
     }
 
     const embed = new EmbedBuilder()

@@ -31,13 +31,13 @@ class StreamMonitor {
 
   async checkStreams() {
     try {
-      const streamers = this.streamerStorage.getStreamers();
+      const allStreamers = this.streamerStorage.getAllStreamers();
 
-      if (streamers.length === 0) {
+      if (allStreamers.length === 0) {
         return;
       }
 
-      const liveStreams = await this.twitchClient.getStreams(streamers);
+      const liveStreams = await this.twitchClient.getStreams(allStreamers);
 
       const currentlyLive = new Set(liveStreams.map(stream => stream.user_login.toLowerCase()));
 
@@ -45,7 +45,7 @@ class StreamMonitor {
         const userLogin = stream.user_login.toLowerCase();
 
         if (!this.liveStreams.has(userLogin)) {
-          await this.sendNotification(stream);
+          await this.sendNotifications(stream);
           this.liveStreams.add(userLogin);
         }
       }
@@ -61,46 +61,59 @@ class StreamMonitor {
     }
   }
 
-  async sendNotification(stream) {
+  async sendNotifications(stream) {
     try {
-      const channelId = process.env.NOTIFICATION_CHANNEL_ID;
-      const roleId = process.env.WIZARDS_ROLE_ID;
+      const allGuilds = this.streamerStorage.getAllGuilds();
+      const userLogin = stream.user_login.toLowerCase();
 
-      if (!channelId) {
-        console.error('❌ NOTIFICATION_CHANNEL_ID not set in .env');
-        return;
+      for (const [guildId, config] of Object.entries(allGuilds)) {
+        if (!config.streamers.includes(userLogin)) {
+          continue;
+        }
+
+        const channelId = config.notificationChannelId;
+
+        if (!channelId) {
+          console.log(`⚠️  Guild ${guildId} has no notification channel set for ${stream.user_name}`);
+          continue;
+        }
+
+        try {
+          const channel = await this.client.channels.fetch(channelId);
+
+          if (!channel) {
+            console.error(`❌ Could not find channel ${channelId} for guild ${guildId}`);
+            continue;
+          }
+
+          const embed = new EmbedBuilder()
+            .setColor('#9146FF')
+            .setTitle(`🔴 ${stream.user_name} is now live!`)
+            .setURL(`https://twitch.tv/${stream.user_login}`)
+            .setDescription(stream.title || 'No title')
+            .addFields(
+              { name: '🎮 Game', value: stream.game_name || 'Not specified', inline: true },
+              { name: '👥 Viewers', value: stream.viewer_count.toString(), inline: true }
+            )
+            .setThumbnail(stream.thumbnail_url.replace('{width}', '440').replace('{height}', '248'))
+            .setTimestamp()
+            .setFooter({ text: 'Twitch' });
+
+          const roleId = config.roleId;
+          const message = roleId ? `<@&${roleId}> ${stream.user_name} is live!` : `${stream.user_name} is live!`;
+
+          await channel.send({
+            content: message,
+            embeds: [embed],
+          });
+
+          console.log(`✅ Notification sent for ${stream.user_name} to guild ${guildId}`);
+        } catch (error) {
+          console.error(`❌ Error sending notification to guild ${guildId}:`, error.message);
+        }
       }
-
-      const channel = await this.client.channels.fetch(channelId);
-
-      if (!channel) {
-        console.error('❌ Could not find notification channel');
-        return;
-      }
-
-      const embed = new EmbedBuilder()
-        .setColor('#9146FF')
-        .setTitle(`🔴 ${stream.user_name} is now live!`)
-        .setURL(`https://twitch.tv/${stream.user_login}`)
-        .setDescription(stream.title || 'No title')
-        .addFields(
-          { name: '🎮 Game', value: stream.game_name || 'Not specified', inline: true },
-          { name: '👥 Viewers', value: stream.viewer_count.toString(), inline: true }
-        )
-        .setThumbnail(stream.thumbnail_url.replace('{width}', '440').replace('{height}', '248'))
-        .setTimestamp()
-        .setFooter({ text: 'Twitch' });
-
-      const message = roleId ? `<@&${roleId}> ${stream.user_name} is live!` : `${stream.user_name} is live!`;
-
-      await channel.send({
-        content: message,
-        embeds: [embed],
-      });
-
-      console.log(`✅ Notification sent for ${stream.user_name}`);
     } catch (error) {
-      console.error('❌ Error sending notification:', error);
+      console.error('❌ Error sending notifications:', error);
     }
   }
 }

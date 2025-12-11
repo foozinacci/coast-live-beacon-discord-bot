@@ -12,6 +12,7 @@ module.exports = {
     const username = args[0].toLowerCase();
     const storage = new StreamerStorage();
     const twitchClient = new TwitchClient();
+    const guildId = message.guild.id;
 
     const userInfo = await twitchClient.getUserInfo(username);
 
@@ -19,12 +20,12 @@ module.exports = {
       return message.reply(`❌ Twitch user "${username}" not found. Please check the username and try again.`);
     }
 
-    const added = storage.addStreamer(userInfo.login);
+    const added = storage.addStreamer(guildId, userInfo.login);
 
     if (added) {
-      return message.reply(`✅ Added **${userInfo.display_name}** (${userInfo.login}) to the monitoring list!`);
+      return message.reply(`✅ Added **${userInfo.display_name}** (${userInfo.login}) to this server's monitoring list!`);
     } else {
-      return message.reply(`⚠️  **${userInfo.display_name}** is already being monitored.`);
+      return message.reply(`⚠️  **${userInfo.display_name}** is already being monitored on this server.`);
     }
   },
 };
