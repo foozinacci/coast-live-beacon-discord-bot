@@ -25,12 +25,12 @@ module.exports = {
     }
 
     if (!isModerator) {
-      const discordUsername = message.author.username.toLowerCase();
-      const twitchUsername = userInfo.login.toLowerCase();
-
-      if (discordUsername !== twitchUsername) {
-        return message.reply(`❌ You can only add your own Twitch account. Your Discord username (${message.author.username}) must match the Twitch username (${userInfo.login}).\n\nIf you want to add someone else, ask a moderator!`);
+      const existingStreamers = storage.getStreamers(guildId);
+      if (existingStreamers.includes(userInfo.login.toLowerCase())) {
+        return message.reply(`⚠️  **${userInfo.display_name}** is already being monitored on this server. You can't add the same account twice.`);
       }
+
+      return message.reply(`❌ Regular members cannot add streamers directly.\n\n**To add yourself:**\n1. Link your Twitch account in Discord: User Settings → Connections → Twitch\n2. Ask a moderator to verify and add you\n\n**OR** ask a moderator to add you manually with \`!addstreamer ${userInfo.login}\``);
     }
 
     const added = storage.addStreamer(guildId, userInfo.login);
