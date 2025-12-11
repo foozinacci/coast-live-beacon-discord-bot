@@ -25,15 +25,7 @@ module.exports = {
     }
 
     if (!isModerator) {
-      const discordUsername = message.author.username.toLowerCase();
-      const discordDisplayName = message.author.displayName?.toLowerCase();
-      const twitchUsername = userInfo.login.toLowerCase();
-
-      const isMatch = discordUsername === twitchUsername || discordDisplayName === twitchUsername;
-
-      if (!isMatch) {
-        return message.reply(`❌ You can only add yourself! Your Discord name (${message.author.username}) must match the Twitch username (${userInfo.login}).\n\nTo add someone else, ask a moderator.`);
-      }
+      return message.reply(`❌ Only moderators can add streamers.\n\nIf you want to be added to the monitoring list, ask a moderator!`);
     }
 
     const added = storage.addStreamer(guildId, userInfo.login);
