@@ -1,0 +1,18 @@
+{
+  "name": "coast-discord-bot",
+  "version": "1.0.0",
+  "description": "Discord bot for Twitch stream notifications",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "node --watch src/index.js"
+  },
+  "keywords": ["discord", "twitch", "bot", "notifications"],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "discord.js": "^14.14.1",
+    "axios": "^1.6.5",
+    "dotenv": "^16.3.1"
+  }
+}
