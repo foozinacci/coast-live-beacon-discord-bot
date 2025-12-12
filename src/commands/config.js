@@ -5,6 +5,11 @@ module.exports = {
   name: 'config',
   description: 'Show current server configuration',
   async execute(message, args) {
+    // Ensure command is used in a guild
+    if (!message.guild) {
+      return message.reply('❌ This command can only be used in a server.');
+    }
+
     const storage = new StreamerStorage();
     const guildId = message.guild.id;
     const config = storage.getGuildConfig(guildId);

@@ -4,9 +4,12 @@ module.exports = {
   name: 'help',
   description: 'Show available commands',
   async execute(message, args) {
-    const isModerator = message.member.permissions.has('ManageMessages') ||
-                        message.member.permissions.has('ModerateMembers') ||
-                        message.member.permissions.has('Administrator');
+    // Check if member data is available for footer customization
+    const isModerator = message.member && message.guild && (
+      message.member.permissions.has('ManageMessages') ||
+      message.member.permissions.has('ModerateMembers') ||
+      message.member.permissions.has('Administrator')
+    );
 
     const embed = new EmbedBuilder()
       .setColor('#9146FF')
