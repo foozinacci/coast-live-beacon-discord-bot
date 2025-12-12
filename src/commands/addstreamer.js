@@ -5,6 +5,16 @@ module.exports = {
   name: 'addstreamer',
   description: 'Add a Twitch streamer to monitor',
   async execute(message, args) {
+    // Ensure command is used in a guild
+    if (!message.guild) {
+      return message.reply('❌ This command can only be used in a server.');
+    }
+
+    // Ensure member data is available
+    if (!message.member) {
+      return message.reply('❌ Unable to verify your permissions. Please try again.');
+    }
+
     if (args.length === 0) {
       return message.reply('Please provide a Twitch username. Usage: `!addstreamer <username>`');
     }

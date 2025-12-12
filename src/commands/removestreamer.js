@@ -4,6 +4,16 @@ module.exports = {
   name: 'removestreamer',
   description: 'Remove a Twitch streamer from monitoring',
   async execute(message, args) {
+    // Ensure command is used in a guild
+    if (!message.guild) {
+      return message.reply('❌ This command can only be used in a server.');
+    }
+
+    // Ensure member data is available
+    if (!message.member) {
+      return message.reply('❌ Unable to verify your permissions. Please try again.');
+    }
+
     const isModerator = message.member.permissions.has('ManageMessages') ||
                         message.member.permissions.has('ModerateMembers') ||
                         message.member.permissions.has('Administrator');
