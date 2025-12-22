@@ -21,7 +21,14 @@ module.exports = {
     const streamers = config.streamers || [];
 
     if (streamers.length === 0) {
-      return message.reply(`✅ Notification channel set to <#${channelId}>!\n\n📺 No streamers being monitored yet. Use \`!addstreamer <username>\` to add some!`);
+      return message.reply('✅ Go-live notification channel set to <#' + channelId + '>!\n\n' +
+        '📺 **What will be posted here:**\n' +
+        '• Live notifications when streamers go online\n' +
+        '• `!whoslive` command results\n\n' +
+        '**Next Steps:**\n' +
+        '• `!addstreamer USER` - Add a Twitch streamer to monitor\n' +
+        '• `!addstreamers USER, USER, USER.` - Add multiple at once\n' +
+        '• `!setrole @ROLE` - Set role to ping on go-live');
     }
 
     // Check who's currently live as proof

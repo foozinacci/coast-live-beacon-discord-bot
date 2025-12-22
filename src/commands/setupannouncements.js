@@ -14,16 +14,14 @@ module.exports = {
 
         storage.setAnnouncementsChannel(guildId, channelId);
 
-        return message.reply(`✅ Announcements channel set to <#${channelId}>!
-
-📢 **What will be posted here:**
-• 🎂 Birthday celebrations (with personalized stats!)
-• 📣 Promotional announcements
-• 🎉 Community milestones
-
-**Next steps:**
-• Use \`!addbirthday @User MM/DD/YYYY\` to track birthdays
-• Use \`!addad\` to add promotional links
-• Birthdays are checked daily and announced automatically!`);
+        return message.reply('✅ Announcements channel set to <#' + channelId + '>!\n\n' +
+            '📢 **What will be posted here:**\n' +
+            '• 🎂 Birthday celebrations (with personalized stats!)\n' +
+            '• 📣 Scheduled user ads (daily at set times)\n\n' +
+            '**Next Steps:**\n' +
+            '• `!addbirthday @USER MM/DD/YYYY` - Mod adds a user\'s birthday\n' +
+            '• `!addmybirthday MM/DD/YYYY` - Users add their own birthday\n' +
+            '• `!addad HH:MM https://link.com` - Users schedule a daily ad (max 2)\n\n' +
+            '*Birthdays are checked daily at midnight and announced automatically!*');
     },
 };
