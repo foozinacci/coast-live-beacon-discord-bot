@@ -10,69 +10,74 @@ module.exports = {
         const isAdmin = message.member.permissions.has('Administrator');
 
         if (!isModerator) {
-            return message.reply('❌ This command is for moderators only.\n\nUse `!help` for public commands.');
+            return message.reply('❌ Mods only. Use `!help` for public commands.');
         }
 
         const embed = new EmbedBuilder()
             .setColor('#FF6B6B')
-            .setTitle('🛡️ LIVE BEACON - Mod/Admin Commands')
-            .setDescription(isAdmin ? '**Admin View** - Full access' : '**Mod View**');
+            .setTitle('🛡️ LIVE BEACON - Mod/Admin')
+            .setDescription(isAdmin ? '👑 **Admin View**' : '🛡️ **Mod View**');
 
-        // Streamer Management
+        // Streamers
         embed.addFields({
-            name: '📺 Streamers *(run in private channel)*',
-            value: '`!addstreamer USER` - Add single streamer\n' +
-                '`!addstreamers USER, USER, USER.` - Add multiple\n' +
-                '`!removestreamer USER` - Remove streamer\n' +
-                '`!stats USER` - View streamer analytics',
-            inline: false
+            name: '📺 Streamers',
+            value: '`!addstreamer USER`\n' +
+                '`!addstreamers USER, USER.`\n' +
+                '`!removestreamer USER`\n' +
+                '`!stats USER` · `!leaderboard`',
+            inline: true
         });
 
-        // Leaderboard
-        embed.addFields({
-            name: '🏆 Leaderboard',
-            value: '`!leaderboard` - Rank by peak viewers\n' +
-                '`!leaderboard avgviewers` - Rank by average\n' +
-                '`!leaderboard streams` - Rank by stream count\n' +
-                '`!leaderboard duration` - Rank by total time',
-            inline: false
-        });
-
-        // Birthday Management
+        // Birthdays
         embed.addFields({
             name: '🎂 Birthdays',
-            value: '`!addbirthday @USER MM/DD/YYYY` - Add user birthday\n' +
-                '`!removebirthday @USER` - Remove birthday',
-            inline: false
+            value: '`!addbirthday @USER MM/DD/YYYY`\n' +
+                '`!removebirthday @USER`',
+            inline: true
         });
 
-        // Admin-only commands
+        // XP & Streaks
+        embed.addFields({
+            name: '⭐ XP & Streaks',
+            value: '`!grantxp @USER 100`\n' +
+                '`!resetxp @USER`\n' +
+                '`!streak @USER`\n' +
+                '`!level @USER`',
+            inline: true
+        });
+
+        // Music (coming soon)
+        embed.addFields({
+            name: '🎵 Music *(soon)*',
+            value: '`!pausemusic`\n' +
+                '`!forceskip`\n' +
+                '`!clearqueue`',
+            inline: true
+        });
+
+        // Admin-only
         if (isAdmin) {
             embed.addFields({
-                name: '⚙️ Admin: Channel Setup',
-                value: '*Run these IN the target channel:*\n' +
-                    '`!setchannel` - Go-live notifications\n' +
-                    '`!setupupdates` - Stream-end summaries\n' +
-                    '`!setupannouncements` - Birthdays & ads\n' +
-                    '`!setrole @ROLE` - Ping role for go-live',
-                inline: false
+                name: '⚙️ Admin: Setup',
+                value: '*Run IN target channel:*\n' +
+                    '`!setchannel` - Go-live\n' +
+                    '`!setupupdates` - Summaries\n' +
+                    '`!setupannouncements` - Birthdays/ads\n' +
+                    '`!setrole @ROLE` - Ping role',
+                inline: true
             });
 
             embed.addFields({
                 name: '💾 Admin: Data',
-                value: '`!backup` - List backups\n' +
-                    '`!backup view NAME` - See backup contents\n' +
-                    '`!backup create [reason]` - Create backup\n' +
-                    '`!backup restore NAME` - Restore (hot reload)\n' +
-                    '`!config` - View current settings\n' +
-                    '`!removead @USER 1|2` - Remove user\'s ad\n' +
-                    '`!clearbirthdays confirm` - Reset all birthdays',
-                inline: false
+                value: '`!backup` `!backup view`\n' +
+                    '`!backup restore NAME`\n' +
+                    '`!config` · `!removead @USER`\n' +
+                    '`!clearbirthdays confirm`',
+                inline: true
             });
         }
 
-        const roleText = isAdmin ? '👑 Administrator' : '🛡️ Moderator';
-        embed.setFooter({ text: roleText + ' | LIVE BEACON by COAST' });
+        embed.setFooter({ text: isAdmin ? '👑 Administrator' : '🛡️ Moderator' });
         embed.setTimestamp();
 
         return message.reply({ embeds: [embed] });
