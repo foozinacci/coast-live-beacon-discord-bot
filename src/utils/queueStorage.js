@@ -136,36 +136,22 @@ class QueueStorage {
 
         if (queue.tracks.length === 0) return null;
 
-        // Shuffle with constraints:
-        // - No back-to-back same user
-        // - No same track within 10 plays
-        // - Birthday track priority
+        // Simple rotation: use currentIndex and increment
+        let index = queue.currentIndex || 0;
 
-        const eligibleTracks = queue.tracks.filter((t, i) => {
-            // Skip recently played
-            if (t.lastPlayedAt) {
-                const recentPlays = queue.tracks.filter(x =>
-                    x.lastPlayedAt && x.lastPlayedAt > t.lastPlayedAt
-                ).length;
-                if (recentPlays < 10 && t.playCount > 0) return false;
-            }
-            return true;
-        });
-
-        if (eligibleTracks.length === 0) {
-            // Reset all play counts
-            queue.tracks.forEach(t => t.playCount = 0);
-            this.saveData(data);
-            return queue.tracks[0];
+        // Wrap around if at end
+        if (index >= queue.tracks.length) {
+            index = 0;
         }
 
-        // Birthday priority
-        const birthdayTrack = eligibleTracks.find(t => t.isBirthday && t.playCount === 0);
-        if (birthdayTrack) return birthdayTrack;
+        const track = queue.tracks[index];
 
-        // Random weighted selection
-        const randomIndex = Math.floor(Math.random() * eligibleTracks.length);
-        return eligibleTracks[randomIndex];
+        // Update index for next time
+        queue.currentIndex = (index + 1) % queue.tracks.length;
+        data.guilds[guildId] = queue;
+        this.saveData(data);
+
+        return track;
     }
 
     markPlayed(guildId, trackId) {
