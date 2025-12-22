@@ -46,6 +46,11 @@ client.once(Events.ClientReady, async (c) => {
   const MusicPlayer = require('./services/musicPlayer');
   client.musicPlayer = new MusicPlayer(client);
 
+  console.log('📺 Loading Twitch chat connections...');
+  const TwitchChat = require('./services/twitchChat');
+  client.twitchChat = new TwitchChat(client);
+  await client.twitchChat.loadSavedConfigs();
+
   console.log('⭐ XP and streak tracking active');
 });
 
