@@ -57,24 +57,27 @@ module.exports = {
                     return message.reply('⚠️ Spotify not configured. Use YouTube instead.');
                 }
 
-                // Validate Spotify URL
-                if (play.sp_validate(url) === 'track') {
-                    platform = 'spotify';
+                platform = 'spotify';
 
+                try {
                     // Get Spotify track info
                     const sp = await play.spotify(url);
 
-                    // Spotify tracks play via YouTube search
+                    if (!sp || !sp.name) {
+                        return message.reply('❌ Could not get Spotify track info. Try a YouTube link instead.');
+                    }
+
                     trackInfo = {
                         url: url,
                         title: sp.name,
                         artist: sp.artists?.map(a => a.name).join(', ') || 'Unknown',
-                        duration: Math.floor(sp.durationInMs / 1000),
+                        duration: Math.floor((sp.durationInMs || 180000) / 1000),
                         platform: 'spotify',
                         spotifyUrl: url
                     };
-                } else {
-                    return message.reply('❌ Only Spotify **tracks** are supported (not albums/playlists).');
+                } catch (spotifyError) {
+                    console.error('Spotify fetch error:', spotifyError.message);
+                    return message.reply('❌ Spotify error: ' + (spotifyError.message || 'Unknown error') + '\n\nTry a YouTube link instead.');
                 }
             }
             // Check YouTube
