@@ -123,12 +123,17 @@ class AnalyticsStorage {
     const totalDuration = sessions.reduce((sum, s) => sum + (s.duration || 0), 0);
     const avgDuration = totalDuration / totalSessions;
 
-    const peakViewers = Math.max(...sessions.map(s => s.peakViewers));
-    const avgPeakViewers = sessions.reduce((sum, s) => sum + s.peakViewers, 0) / totalSessions;
+    // Safely get peak viewers, filter out undefined/null
+    const validPeaks = sessions.map(s => s.peakViewers || 0).filter(v => !isNaN(v));
+    const peakViewers = validPeaks.length > 0 ? Math.max(...validPeaks) : 0;
+    const avgPeakViewers = validPeaks.length > 0
+      ? validPeaks.reduce((sum, v) => sum + v, 0) / validPeaks.length
+      : 0;
 
     const games = {};
     sessions.forEach(s => {
-      games[s.game] = (games[s.game] || 0) + 1;
+      const game = s.game || 'Unknown';
+      games[game] = (games[game] || 0) + 1;
     });
 
     const topGames = Object.entries(games)
@@ -141,17 +146,28 @@ class AnalyticsStorage {
 
     const hourlyStats = {};
     sessions.forEach(s => {
+      if (!s.startTime) return;
       const hour = new Date(s.startTime).getHours();
       if (!hourlyStats[hour]) {
         hourlyStats[hour] = { count: 0, totalViewers: 0 };
       }
       hourlyStats[hour].count++;
-      hourlyStats[hour].totalViewers += s.peakViewers;
+      hourlyStats[hour].totalViewers += (s.peakViewers || 0);
     });
 
-    const peakHour = Object.entries(hourlyStats)
-      .map(([hour, stats]) => ({ hour: parseInt(hour), avgViewers: stats.totalViewers / stats.count, streams: stats.count }))
-      .sort((a, b) => b.avgViewers - a.avgViewers)[0];
+    // Safely get peak hour
+    const hourlyEntries = Object.entries(hourlyStats);
+    let peakHour = null;
+    if (hourlyEntries.length > 0) {
+      const sorted = hourlyEntries
+        .map(([hour, stats]) => ({
+          hour: parseInt(hour),
+          avgViewers: stats.count > 0 ? stats.totalViewers / stats.count : 0,
+          streams: stats.count
+        }))
+        .sort((a, b) => b.avgViewers - a.avgViewers);
+      peakHour = sorted[0];
+    }
 
     const recentSessions = sessions.slice(-10).reverse();
 
