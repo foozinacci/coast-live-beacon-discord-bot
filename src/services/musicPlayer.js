@@ -64,10 +64,13 @@ class MusicPlayer {
 
         if (!playerData.connection || playerData.connection.state.status === VoiceConnectionStatus.Destroyed) {
             try {
+                console.log('🎵 Attempting to join voice channel:', voiceChannel.name);
                 playerData.connection = await this.joinChannel(voiceChannel);
                 playerData.connection.subscribe(playerData.player);
+                console.log('🎵 Successfully joined voice channel');
             } catch (error) {
-                return { success: false, error: 'Could not join voice channel.' };
+                console.error('Voice connection error:', error);
+                return { success: false, error: 'Could not join voice channel: ' + error.message };
             }
         }
 
@@ -80,7 +83,6 @@ class MusicPlayer {
         const track = this.queueStorage.getNextTrack(guildId);
 
         if (!track) {
-            // Start idle timer
             this.startIdleTimer(guildId);
             return;
         }
@@ -99,6 +101,7 @@ class MusicPlayer {
             } else if (track.platform === 'spotify') {
                 // Spotify: search YouTube for the song and play that
                 const searchQuery = track.title + ' ' + track.artist;
+                console.log('🎵 Searching YouTube for Spotify track:', searchQuery);
                 const searched = await play.search(searchQuery, { limit: 1 });
                 if (searched.length === 0) {
                     console.error('No YouTube match found for Spotify track:', searchQuery);
