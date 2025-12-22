@@ -7,10 +7,11 @@ const {
     entersState,
     StreamType
 } = require('@discordjs/voice');
-const { spawn } = require('child_process');
 const { EmbedBuilder } = require('discord.js');
 const QueueStorage = require('../utils/queueStorage');
 const play = require('play-dl');
+const youtubedl = require('youtube-dl-exec');
+const { Readable } = require('stream');
 
 class MusicPlayer {
     constructor(client) {
@@ -108,19 +109,31 @@ class MusicPlayer {
                 videoUrl = searched[0].url;
             }
 
-            console.log('🎵 Streaming via yt-dlp:', videoUrl);
+            console.log('🎵 Getting audio URL via yt-dlp:', videoUrl);
 
-            // Use yt-dlp to stream audio
-            const ytdlp = spawn('npx', ['yt-dlp', '-f', 'bestaudio', '-o', '-', videoUrl], {
-                stdio: ['ignore', 'pipe', 'pipe'],
-                shell: true
-            });
+            // Use youtube-dl-exec to get direct audio URL
+            const info = await youtubedl(videoUrl, {
+                dumpSingleJson: true,
+                noCheckCertificates: true,
+                noWarnings: true,
+                preferFreeFormats: true,
+                addHeader: ['referer:youtube.com', 'user-agent:Mozilla/5.0']
+            }, { windowsHide: true });
 
-            ytdlp.stderr.on('data', (data) => {
-                console.log('yt-dlp:', data.toString().substring(0, 100));
-            });
+            // Find best audio format
+            const audioFormat = info.formats.find(f =>
+                f.acodec !== 'none' && f.vcodec === 'none'
+            ) || info.formats.find(f => f.acodec !== 'none');
 
-            const stream = createAudioResource(ytdlp.stdout, {
+            if (!audioFormat || !audioFormat.url) {
+                console.error('No audio format found');
+                this.playNext(guildId);
+                return;
+            }
+
+            console.log('🎵 Got audio URL, creating resource');
+
+            const stream = createAudioResource(audioFormat.url, {
                 inputType: StreamType.Arbitrary
             });
 
