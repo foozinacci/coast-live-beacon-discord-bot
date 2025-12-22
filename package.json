@@ -17,9 +17,11 @@
   "license": "MIT",
   "dependencies": {
     "@discordjs/voice": "^0.19.0",
+    "@snazzah/davey": "^0.1.9",
     "axios": "^1.6.5",
     "discord.js": "^14.14.1",
     "dotenv": "^16.3.1",
+    "libsodium-wrappers": "^0.7.15",
     "play-dl": "^1.9.7",
     "sodium-native": "^5.0.10",
     "spotify-web-api-node": "^5.0.2",

@@ -87,13 +87,22 @@ class MusicPlayer {
             return;
         }
 
+        console.log('🎵 Next track:', track.title, 'URL:', track.url, 'Platform:', track.platform);
+
         this.clearIdleTimer(guildId);
 
         try {
             let stream;
 
             if (track.platform === 'youtube') {
+                if (!track.url || track.url === 'undefined') {
+                    console.error('Invalid YouTube URL for track:', track.title);
+                    this.playNext(guildId);
+                    return;
+                }
+                console.log('🎵 Streaming from YouTube:', track.url);
                 const ytStream = await play.stream(track.url);
+                console.log('🎵 Got stream, type:', ytStream.type);
                 stream = createAudioResource(ytStream.stream, { inputType: ytStream.type });
             } else if (track.platform === 'soundcloud') {
                 const scStream = await play.stream(track.url);
