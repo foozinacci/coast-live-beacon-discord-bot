@@ -8,14 +8,22 @@ module.exports = {
     async execute(message, args) {
         if (args.length === 0) {
             return message.reply('**Add a Track**\n\n' +
-                '`!addtrack [YouTube/SoundCloud URL]`\n\n' +
+                '`!addtrack [YouTube URL]`\n\n' +
                 '📋 **Limits:** 3 tracks (4 on birthday)\n' +
                 '⏱️ **Max Duration:** 7 min (15 min birthday)\n\n' +
+                '*Supported: YouTube, SoundCloud, direct audio links*\n' +
                 '*View your tracks: `!myqueue`*');
         }
 
         const url = args[0];
         const isExtended = args.includes('--extended');
+
+        // Check for Spotify
+        if (url.includes('spotify.com')) {
+            return message.reply('⚠️ **Spotify not yet configured.**\n\n' +
+                'Please use a YouTube or SoundCloud link instead.\n' +
+                '*Tip: Search for the song on YouTube and use that URL.*');
+        }
 
         // Validate URL
         let platform = 'unknown';
@@ -26,7 +34,8 @@ module.exports = {
         } else if (url.match(/\.(mp3|wav|ogg|m4a)$/i)) {
             platform = 'direct';
         } else {
-            return message.reply('❌ Unsupported link. Use YouTube, SoundCloud, or direct audio links.');
+            return message.reply('❌ Unsupported link.\n\n' +
+                '**Supported:** YouTube, SoundCloud, direct audio links (.mp3, .wav)');
         }
 
         // Get track info
@@ -62,7 +71,8 @@ module.exports = {
             }
         } catch (error) {
             console.error('Track info error:', error);
-            return message.reply('❌ Could not fetch track info. Check the URL.');
+            return message.reply('❌ Could not fetch track info.\n\n' +
+                'Make sure the video is public and not age-restricted.');
         }
 
         // Check birthday status (would check AnnouncementStorage)
@@ -92,6 +102,6 @@ module.exports = {
             '**' + trackInfo.title + '**\n' +
             trackInfo.artist + ' • ' + minutes + ':' + seconds + '\n\n' +
             '📍 Position: #' + result.position + ' in queue\n' +
-            '*Use `!myqueue` to view your tracks*');
+            '*Join voice & run `!play` to start*');
     },
 };

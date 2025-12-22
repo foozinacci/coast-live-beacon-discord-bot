@@ -56,8 +56,8 @@ class MusicPlayer {
     async play(guildId, voiceChannel) {
         const queue = this.queueStorage.getGuildQueue(guildId);
 
-        if (queue.tracks.length < 4) {
-            return { success: false, error: 'Need 4+ unique submitters to start loop.' };
+        if (queue.tracks.length < 1) {
+            return { success: false, error: 'Queue is empty! Add tracks with `!addtrack [URL]`' };
         }
 
         const playerData = this.getPlayer(guildId);
