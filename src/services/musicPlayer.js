@@ -133,17 +133,11 @@ class MusicPlayer {
                 return;
             }
 
-            console.log('🎵 Audio format:', audioFormat.acodec, audioFormat.abr + 'kbps');
+            console.log('🎵 Audio format:', audioFormat.acodec, (audioFormat.abr || 'unknown') + 'kbps');
 
             const stream = createAudioResource(audioFormat.url, {
-                inputType: StreamType.Arbitrary,
-                inlineVolume: true
+                inputType: StreamType.Arbitrary
             });
-
-            // Set volume slightly below max to prevent clipping
-            if (stream.volume) {
-                stream.volume.setVolume(0.8);
-            }
 
             playerData.current = track;
             playerData.player.play(stream);
