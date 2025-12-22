@@ -45,9 +45,12 @@ module.exports = {
           inline: true
         },
         {
-          name: '🎵 Music *(coming soon)*',
-          value: '`!addtrack`\n' +
-            '`!queue` `!nowplaying`',
+          name: '🎵 Music Queue',
+          value: '`!addtrack [URL]` - Add track\n' +
+            '`!myqueue` - Your tracks\n' +
+            '`!queue` - Full queue\n' +
+            '`!nowplaying` - Current\n' +
+            '`!skip` - Vote skip',
           inline: true
         }
       )

@@ -41,17 +41,18 @@ module.exports = {
             name: '⭐ XP & Streaks',
             value: '`!grantxp @USER 100`\n' +
                 '`!resetxp @USER`\n' +
-                '`!streak @USER`\n' +
-                '`!level @USER`',
+                '`!freezestreaks on|off`',
             inline: true
         });
 
-        // Music (coming soon)
+        // Music
         embed.addFields({
-            name: '🎵 Music *(soon)*',
-            value: '`!pausemusic`\n' +
-                '`!forceskip`\n' +
-                '`!clearqueue`',
+            name: '🎵 Music',
+            value: '`!forceskip` · `!pausemusic`\n' +
+                '`!resumemusic`\n' +
+                '`!clearqueue confirm`\n' +
+                '`!removetrack @USER [#]`\n' +
+                '`!blacklist [url]`',
             inline: true
         });
 
@@ -59,19 +60,21 @@ module.exports = {
         if (isAdmin) {
             embed.addFields({
                 name: '⚙️ Admin: Setup',
-                value: '*Run IN target channel:*\n' +
+                value: '`!setup` - First-time wizard\n' +
                     '`!setchannel` - Go-live\n' +
                     '`!setupupdates` - Summaries\n' +
-                    '`!setupannouncements` - Birthdays/ads\n' +
-                    '`!setrole @ROLE` - Ping role',
+                    '`!setupannouncements`\n' +
+                    '`!setmusicchannel`\n' +
+                    '`!setrole @ROLE`',
                 inline: true
             });
 
             embed.addFields({
                 name: '💾 Admin: Data',
-                value: '`!backup` `!backup view`\n' +
-                    '`!backup restore NAME`\n' +
-                    '`!config` · `!removead @USER`\n' +
+                value: '`!config` - View settings\n' +
+                    '`!backup` - Manage backups\n' +
+                    '`!musicstatus`\n' +
+                    '`!removead @USER 1|2`\n' +
                     '`!clearbirthdays confirm`',
                 inline: true
             });
