@@ -69,8 +69,8 @@ module.exports = {
 
       embed.addFields({
         name: '🎂 Mod: Birthdays',
-        value: '`!addbirthday @User 03/15/1995` - Add birthday\n' +
-          '`!removebirthday @User` - Remove birthday',
+        value: '`!addbirthday @USER 03/15/1995` - Add birthday\n' +
+          '`!removebirthday @USER` - Remove birthday',
         inline: false
       });
     }
@@ -91,7 +91,7 @@ module.exports = {
         name: '💾 Admin: Data',
         value: '`!backup` - View/create/restore backups\n' +
           '`!config` - View current settings\n' +
-          '`!removead @User 1|2` - Remove user\'s ad',
+          '`!removead @USER 1|2` - Remove user\'s ad',
         inline: false
       });
     }
@@ -141,7 +141,7 @@ module.exports = {
       birthday: {
         title: '🎂 Birthday System',
         description: 'Track and celebrate birthdays!',
-        usage: '`!addbirthday @User MM/DD/YYYY`',
+        usage: '`!addbirthday @USER MM/DD/YYYY`',
         options: [
           '• **Date format:** MM/DD/YYYY (03/15/1995)',
           '• Announces in announcements channel',
@@ -172,7 +172,7 @@ module.exports = {
           '`!myads` - View your ads',
           '`!removemyad 1` - Remove first ad'
         ],
-        note: '**Everyone can add** • Mods can remove with `!removead @User`',
+        note: '**Everyone can add** • Mods can remove with `!removead @USER`',
         requiresMod: false
       },
       whoslive: {
