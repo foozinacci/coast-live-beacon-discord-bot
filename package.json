@@ -21,6 +21,7 @@
     "discord.js": "^14.14.1",
     "dotenv": "^16.3.1",
     "play-dl": "^1.9.7",
-    "sodium-native": "^5.0.10"
+    "sodium-native": "^5.0.10",
+    "tmi.js": "^1.8.5"
   }
 }
