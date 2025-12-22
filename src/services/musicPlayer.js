@@ -96,6 +96,17 @@ class MusicPlayer {
             } else if (track.platform === 'soundcloud') {
                 const scStream = await play.stream(track.url);
                 stream = createAudioResource(scStream.stream, { inputType: scStream.type });
+            } else if (track.platform === 'spotify') {
+                // Spotify: search YouTube for the song and play that
+                const searchQuery = track.title + ' ' + track.artist;
+                const searched = await play.search(searchQuery, { limit: 1 });
+                if (searched.length === 0) {
+                    console.error('No YouTube match found for Spotify track:', searchQuery);
+                    this.playNext(guildId);
+                    return;
+                }
+                const ytStream = await play.stream(searched[0].url);
+                stream = createAudioResource(ytStream.stream, { inputType: ytStream.type });
             } else {
                 // Direct audio link
                 stream = createAudioResource(track.url);
