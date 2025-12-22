@@ -30,7 +30,7 @@ module.exports = {
     // Public commands (everyone sees)
     embed.addFields({
       name: '📺 Public Commands',
-      value: '`!whoslive` - See who\'s streaming *(in go-live channel)*\n' +
+      value: '`!whoslive` - See who\'s streaming now\n' +
         '`!liststreamer` - View monitored streamers\n' +
         '`!listbirthdays` - Upcoming birthdays\n' +
         '`!help` - This guide',
@@ -40,28 +40,38 @@ module.exports = {
     // Ad commands (everyone)
     embed.addFields({
       name: '📢 Your Ads (max 2)',
-      value: '`!addad <HH:MM> <url> <message>` - Schedule a daily ad\n' +
+      value: '`!addad 14:30 https://link.com` - Schedule daily ad\n' +
         '`!myads` - View your ads\n' +
-        '`!removemyad 1` or `2` - Remove your ad',
+        '`!removemyad 1` or `2` - Remove your ad\n' +
+        '*Ad time in 24hr format (14:30 = 2:30 PM)*',
       inline: false
     });
 
     // Mod commands
     if (isModerator) {
       embed.addFields({
-        name: '🔧 Mod: Streamer Management',
-        value: '`!addstreamer <username>` - Add Twitch streamer\n' +
-          '`!removestreamer <username>` - Remove streamer\n' +
-          '`!stats <username>` - View streamer analytics\n' +
-          '`!leaderboard [metric]` - Streamer rankings',
+        name: '🔧 Mod: Streamers *(run in private channel)*',
+        value: '`!addstreamer ninja` - Add single streamer\n' +
+          '`!addstreamers ninja, shroud, pokimane.` - Add multiple\n' +
+          '`!removestreamer ninja` - Remove streamer\n' +
+          '`!stats ninja` - View analytics',
         inline: false
       });
 
       embed.addFields({
-        name: '🎂 Mod: Birthday Management',
-        value: '`!addbirthday @User MM/DD/YYYY` - Track birthday\n' +
+        name: '🏆 Mod: Leaderboard',
+        value: '`!leaderboard` - Rank by peak viewers\n' +
+          '`!leaderboard avgviewers` - Rank by average\n' +
+          '`!leaderboard streams` - Rank by stream count\n' +
+          '`!leaderboard duration` - Rank by total time',
+        inline: false
+      });
+
+      embed.addFields({
+        name: '🎂 Mod: Birthdays',
+        value: '`!addbirthday @User 03/15/1995` - Add birthday\n' +
           '`!removebirthday @User` - Remove birthday\n' +
-          '`!removead @User [1|2]` - Remove user\'s ads',
+          '`!removead @User` - Remove user\'s ads',
         inline: false
       });
     }
@@ -69,12 +79,12 @@ module.exports = {
     // Admin commands
     if (isAdmin) {
       embed.addFields({
-        name: '⚙️ Admin: Setup',
-        value: '**Run these in the target channel:**\n' +
-          '`!setchannel` - Go-live notifications *(public channel)*\n' +
-          '`!setupupdates` - Stream summaries *(mod channel)*\n' +
-          '`!setupannouncements` - Birthdays & ads *(announcements)*\n' +
-          '`!setrole @Role` - Role to ping on go-live',
+        name: '⚙️ Admin: Channel Setup',
+        value: '*Run these IN the target channel:*\n' +
+          '`!setchannel` - Go-live notifications\n' +
+          '`!setupupdates` - Stream summaries (mod-only)\n' +
+          '`!setupannouncements` - Birthdays & ads\n' +
+          '`!setrole @StreamerRole` - Ping role for go-live',
         inline: false
       });
 
@@ -85,13 +95,6 @@ module.exports = {
         inline: false
       });
     }
-
-    // Detailed help hint
-    embed.addFields({
-      name: '📚 Detailed Help',
-      value: '`!help leaderboard` • `!help stats` • `!help birthday` • `!help ads`',
-      inline: false
-    });
 
     const roleText = isAdmin ? '👑 Admin' : isModerator ? '🛡️ Moderator' : '👤 Member';
     embed.setFooter({ text: roleText + ' | LIVE BEACON by COAST' });
@@ -104,33 +107,35 @@ module.exports = {
     const helpTopics = {
       leaderboard: {
         title: '🏆 Leaderboard Command',
-        description: 'View rankings of your monitored streamers.',
-        usage: '`!leaderboard [metric]`',
+        description: 'Rank your monitored streamers by different stats.',
+        usage: '`!leaderboard` or `!leaderboard [metric]`',
         options: [
-          '`peakviewers` - Highest peak viewers (default)',
-          '`avgviewers` - Highest average viewers',
-          '`streams` - Most streams tracked',
-          '`duration` - Total streaming time'
+          '**Metrics:**',
+          '• `peakviewers` - Highest peak viewers *(default)*',
+          '• `avgviewers` - Highest average viewers',
+          '• `streams` - Most streams tracked',
+          '• `duration` - Longest total stream time'
         ],
         examples: [
-          '`!leaderboard` - Peak viewers ranking',
-          '`!leaderboard avgviewers` - Average viewers ranking'
+          '`!leaderboard` - Top by peak viewers',
+          '`!leaderboard avgviewers` - Top by average',
+          '`!leaderboard duration` - Who streams most'
         ],
-        note: '**Mod only** • Data from tracked streams only.',
+        note: '**Mod only** • Data from tracked streams since bot was added.',
         requiresMod: true
       },
       stats: {
         title: '📊 Stats Command',
-        description: 'View detailed analytics for a streamer.',
-        usage: '`!stats <username>`',
+        description: 'View detailed analytics for a specific streamer.',
+        usage: '`!stats ninja`',
         options: [
-          'Total streams tracked',
-          'Peak & average viewers',
-          'Total streaming time',
-          'Top games played'
+          '• Total streams tracked',
+          '• Peak & average viewers',
+          '• Total streaming time',
+          '• Top games played'
         ],
-        examples: ['`!stats ashlizzlle` - View stats'],
-        note: '**Mod only** • Streamer must be monitored.',
+        examples: ['`!stats ashlizzlle`'],
+        note: '**Mod only** • Streamer must be in your monitored list.',
         requiresMod: true
       },
       birthday: {
@@ -138,29 +143,36 @@ module.exports = {
         description: 'Track and celebrate birthdays!',
         usage: '`!addbirthday @User MM/DD/YYYY`',
         options: [
-          '`!addbirthday @User 03/15/1995` - Add birthday',
-          '`!removebirthday @User` - Remove birthday',
-          '`!listbirthdays` - View upcoming (60 days)'
+          '• **Date format:** MM/DD/YYYY (03/15/1995)',
+          '• Announces in announcements channel',
+          '• Shows age & server tenure',
+          '• Includes streamer stats if applicable!'
         ],
-        examples: ['`!addbirthday @JohnDoe 12/25/2000`'],
-        note: '**Mod to add** • Announces in announcements channel with age, tenure, streamer stats!',
+        examples: [
+          '`!addbirthday @JohnDoe 12/25/2000`',
+          '`!removebirthday @JohnDoe`',
+          '`!listbirthdays` - See next 60 days'
+        ],
+        note: '**Mod to add/remove** • Anyone can view upcoming.',
         requiresMod: true
       },
       ads: {
         title: '📢 Scheduled Ads',
-        description: 'Promote your content with daily posts!',
-        usage: '`!addad <HH:MM> <url> <message>`',
+        description: 'Schedule your promo link to post daily!',
+        usage: '`!addad HH:MM https://your-link.com`',
         options: [
-          'Each user can have **2 ads max**',
-          'Ads post **once daily** at your chosen time',
-          'Posts to announcements channel'
+          '• **Time:** 24-hour format (14:30 = 2:30 PM)',
+          '• **Max 2 ads** per user',
+          '• Posts once daily at your time',
+          '• Posts to announcements channel'
         ],
         examples: [
-          '`!addad 14:30 https://twitch.tv/me Check my stream!`',
-          '`!myads` - View your scheduled ads',
-          '`!removemyad 1` - Remove ad #1'
+          '`!addad 14:30 https://twitch.tv/mystream`',
+          '`!addad 20:00 https://youtube.com/c/mychannel`',
+          '`!myads` - View your ads',
+          '`!removemyad 1` - Remove first ad'
         ],
-        note: '**Everyone** • Mods can remove with `!removead @User`',
+        note: '**Everyone can add** • Mods can remove with `!removead @User`',
         requiresMod: false
       },
       whoslive: {
@@ -168,20 +180,39 @@ module.exports = {
         description: 'Check who is streaming right now.',
         usage: '`!whoslive`',
         options: [
-          'Shows all live streamers',
-          'Sorted by viewer count',
-          'Clickable Twitch links'
+          '• Shows all live streamers',
+          '• Sorted by viewer count',
+          '• Clickable Twitch links',
+          '• **10 second cooldown**'
         ],
         examples: ['`!whoslive`'],
-        note: '**Public** • Only works in the go-live channel • 10s cooldown',
+        note: '**Public** • Only works in the go-live channel.',
         requiresMod: false
+      },
+      streamers: {
+        title: '📺 Adding Streamers',
+        description: 'How to add Twitch streamers to monitor.',
+        usage: '`!addstreamer username` or `!addstreamers user1, user2.`',
+        options: [
+          '• **Single:** `!addstreamer ninja`',
+          '• **Multiple:** `!addstreamers ninja, shroud, pokimane.`',
+          '• End bulk list with a period `.`',
+          '• **Run in a private/mod channel** to avoid spam'
+        ],
+        examples: [
+          '`!addstreamer ashlizzlle`',
+          '`!addstreamers user1, user2, user3.`',
+          '`!removestreamer baduser`'
+        ],
+        note: '**Mod only** • Validates each username on Twitch.',
+        requiresMod: true
       }
     };
 
     const help = helpTopics[topic];
 
     if (!help) {
-      return message.reply('❌ Unknown topic: `' + topic + '`\n\nAvailable: `leaderboard`, `stats`, `birthday`, `ads`, `whoslive`');
+      return message.reply('❌ Unknown topic: `' + topic + '`\n\n**Available:** `leaderboard`, `stats`, `birthday`, `ads`, `whoslive`, `streamers`');
     }
 
     // Check permissions for mod-only topics
@@ -195,7 +226,7 @@ module.exports = {
       .setDescription(help.description)
       .addFields(
         { name: '📝 Usage', value: help.usage, inline: false },
-        { name: '📋 Options', value: help.options.join('\n'), inline: false },
+        { name: '📋 Details', value: help.options.join('\n'), inline: false },
         { name: '💡 Examples', value: help.examples.join('\n'), inline: false },
         { name: '⚠️ Note', value: help.note, inline: false }
       )
