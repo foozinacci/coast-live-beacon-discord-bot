@@ -166,15 +166,24 @@ class StreamMonitor {
             continue;
           }
 
-          // New stream detected
+          // New stream detected - get follower count
+          let startFollowers = null;
+          try {
+            startFollowers = await this.twitchClient.getFollowerCount(stream.user_id);
+          } catch (e) {
+            console.log(`⚠️ Could not get follower count for ${userLogin}`);
+          }
+
           this.analyticsStorage.startSession(userLogin, stream);
 
-          // Store stream info
+          // Store stream info with follower count
           this.liveStreams.set(userLogin, {
             startTime: Date.now(),
             game: stream.game_name,
             title: stream.title,
             userName: stream.user_name,
+            userId: stream.user_id,
+            startFollowers: startFollowers,
             notified: false
           });
 
@@ -258,12 +267,22 @@ class StreamMonitor {
           // Set cooldown
           this.offlineCooldowns.set(userLogin, Date.now());
 
+          // Get end follower count
+          let endFollowers = null;
+          if (streamData.userId) {
+            try {
+              endFollowers = await this.twitchClient.getFollowerCount(streamData.userId);
+            } catch (e) {
+              console.log(`⚠️ Could not get end follower count for ${userLogin}`);
+            }
+          }
+
           const session = this.analyticsStorage.endSession(userLogin);
           if (session) {
-            console.log(`� ${userLogin} stream ended - Duration: ${this.formatDuration(session.duration)}, Peak: ${session.peakViewers} viewers`);
+            console.log(`📊 ${userLogin} stream ended - Duration: ${this.formatDuration(session.duration)}, Peak: ${session.peakViewers} viewers`);
 
-            // Send stream summary to updates channel
-            await this.sendStreamSummary(userLogin, session, streamData);
+            // Send stream summary to updates channel with follower data
+            await this.sendStreamSummary(userLogin, session, streamData, endFollowers);
           }
         } else {
           console.log(`🔄 ${userLogin} is back online - was just a brief disconnect`);
@@ -292,7 +311,7 @@ class StreamMonitor {
   /**
    * Sends a stream summary to the updates channel (mod-only).
    */
-  async sendStreamSummary(userLogin, session, streamData) {
+  async sendStreamSummary(userLogin, session, streamData, endFollowers = null) {
     try {
       const allGuilds = this.streamerStorage.getAllGuilds();
 
@@ -333,24 +352,43 @@ class StreamMonitor {
             hour12: true
           });
 
+          // Calculate follower change
+          let followerField = null;
+          if (streamData.startFollowers !== null && endFollowers !== null) {
+            const followerChange = endFollowers - streamData.startFollowers;
+            const changeStr = followerChange >= 0 ? '+' + followerChange : followerChange.toString();
+            followerField = {
+              name: '📈 Followers',
+              value: endFollowers.toLocaleString() + ' (' + changeStr + ' this stream)',
+              inline: true
+            };
+          }
+
+          const fields = [
+            { name: '🎮 Game', value: session.game || 'Unknown', inline: true },
+            { name: '⏱️ Duration', value: this.formatDuration(durationMs), inline: true },
+            { name: '📅 Started', value: startTimeStr, inline: true },
+            { name: '👥 Peak Viewers', value: session.peakViewers?.toString() || '0', inline: true },
+            { name: '� Avg Viewers', value: avgViewers.toString(), inline: true }
+          ];
+
+          if (followerField) {
+            fields.push(followerField);
+          } else {
+            fields.push({ name: '🎬 Started With', value: (session.startViewers || 0).toString() + ' viewers', inline: true });
+          }
+
           const embed = new EmbedBuilder()
             .setColor('#808080') // Gray for offline
-            .setTitle(`📊 Stream Summary: ${streamData.userName || userLogin}`)
-            .setURL(`https://twitch.tv/${userLogin}`)
-            .setDescription(`**${session.title || 'No title'}**`)
-            .addFields(
-              { name: '🎮 Game', value: session.game || 'Unknown', inline: true },
-              { name: '⏱️ Duration', value: this.formatDuration(durationMs), inline: true },
-              { name: '📅 Started', value: startTimeStr, inline: true },
-              { name: '👥 Peak Viewers', value: session.peakViewers?.toString() || '0', inline: true },
-              { name: '📈 Avg Viewers', value: avgViewers.toString(), inline: true },
-              { name: '🎬 Started With', value: (session.startViewers || 0).toString() + ' viewers', inline: true }
-            )
+            .setTitle('📊 Stream Summary: ' + (streamData.userName || userLogin))
+            .setURL('https://twitch.tv/' + userLogin)
+            .setDescription('**' + (session.title || 'No title') + '**')
+            .addFields(fields)
             .setTimestamp()
             .setFooter({ text: 'Stream ended • Twitch Analytics' });
 
           await channel.send({
-            content: `📴 **${streamData.userName || userLogin}** has gone offline.`,
+            content: '📴 **' + (streamData.userName || userLogin) + '** has gone offline.',
             embeds: [embed],
           });
 

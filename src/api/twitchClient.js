@@ -79,6 +79,28 @@ class TwitchClient {
       return null;
     }
   }
+
+  async getFollowerCount(broadcasterId) {
+    try {
+      const token = await this.getAccessToken();
+
+      const response = await axios.get('https://api.twitch.tv/helix/channels/followers', {
+        params: {
+          broadcaster_id: broadcasterId,
+          first: 1 // We only need the total count
+        },
+        headers: {
+          'Client-ID': this.clientId,
+          'Authorization': 'Bearer ' + token,
+        },
+      });
+
+      return response.data.total || 0;
+    } catch (error) {
+      console.error('❌ Failed to fetch follower count:', error.response?.data || error.message);
+      return null;
+    }
+  }
 }
 
 module.exports = TwitchClient;
