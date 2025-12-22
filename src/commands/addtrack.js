@@ -1,32 +1,44 @@
 const play = require('play-dl');
+const SpotifyWebApi = require('spotify-web-api-node');
 const QueueStorage = require('../utils/queueStorage');
 const XPStorage = require('../utils/xpStorage');
 
-// Initialize Spotify on first use
-let spotifyInitialized = false;
+// Spotify API client
+let spotifyApi = null;
+let tokenExpiresAt = 0;
 
 async function initSpotify() {
-    if (spotifyInitialized) return true;
+    if (!process.env.SPOTIFY_CLIENT_ID || !process.env.SPOTIFY_CLIENT_SECRET) {
+        return false;
+    }
 
-    if (process.env.SPOTIFY_CLIENT_ID && process.env.SPOTIFY_CLIENT_SECRET) {
+    if (!spotifyApi) {
+        spotifyApi = new SpotifyWebApi({
+            clientId: process.env.SPOTIFY_CLIENT_ID,
+            clientSecret: process.env.SPOTIFY_CLIENT_SECRET
+        });
+    }
+
+    // Refresh token if expired
+    if (Date.now() >= tokenExpiresAt) {
         try {
-            await play.setToken({
-                spotify: {
-                    client_id: process.env.SPOTIFY_CLIENT_ID,
-                    client_secret: process.env.SPOTIFY_CLIENT_SECRET,
-                    refresh_token: '', // Not needed for client credentials
-                    market: 'US'
-                }
-            });
-            spotifyInitialized = true;
-            console.log('🎵 Spotify initialized');
-            return true;
+            const data = await spotifyApi.clientCredentialsGrant();
+            spotifyApi.setAccessToken(data.body.access_token);
+            tokenExpiresAt = Date.now() + (data.body.expires_in - 60) * 1000;
+            console.log('🎵 Spotify token refreshed');
         } catch (error) {
-            console.error('Spotify init error:', error);
+            console.error('Spotify auth error:', error.message);
             return false;
         }
     }
-    return false;
+
+    return true;
+}
+
+function extractSpotifyTrackId(url) {
+    // Extract track ID from Spotify URL
+    const match = url.match(/track\/([a-zA-Z0-9]+)/);
+    return match ? match[1] : null;
 }
 
 module.exports = {
@@ -45,7 +57,6 @@ module.exports = {
         const url = args[0];
         const isExtended = args.includes('--extended');
 
-        // Validate URL and determine platform
         let platform = 'unknown';
         let trackInfo;
 
@@ -57,27 +68,28 @@ module.exports = {
                     return message.reply('⚠️ Spotify not configured. Use YouTube instead.');
                 }
 
+                const trackId = extractSpotifyTrackId(url);
+                if (!trackId) {
+                    return message.reply('❌ Invalid Spotify URL. Use a track link.');
+                }
+
                 platform = 'spotify';
 
                 try {
-                    // Get Spotify track info
-                    const sp = await play.spotify(url);
-
-                    if (!sp || !sp.name) {
-                        return message.reply('❌ Could not get Spotify track info. Try a YouTube link instead.');
-                    }
+                    const data = await spotifyApi.getTrack(trackId);
+                    const track = data.body;
 
                     trackInfo = {
                         url: url,
-                        title: sp.name,
-                        artist: sp.artists?.map(a => a.name).join(', ') || 'Unknown',
-                        duration: Math.floor((sp.durationInMs || 180000) / 1000),
+                        title: track.name,
+                        artist: track.artists.map(a => a.name).join(', '),
+                        duration: Math.floor(track.duration_ms / 1000),
                         platform: 'spotify',
                         spotifyUrl: url
                     };
                 } catch (spotifyError) {
-                    console.error('Spotify fetch error:', spotifyError.message);
-                    return message.reply('❌ Spotify error: ' + (spotifyError.message || 'Unknown error') + '\n\nTry a YouTube link instead.');
+                    console.error('Spotify API error:', spotifyError.message);
+                    return message.reply('❌ Could not fetch Spotify track. Try a YouTube link.');
                 }
             }
             // Check YouTube
