@@ -3,19 +3,15 @@ const AnnouncementStorage = require('../utils/announcementStorage');
 
 module.exports = {
     name: 'removead',
-    description: 'Remove ads from a user (mod only)',
+    description: 'Remove ads from a user (admin only)',
     async execute(message, args) {
-        // Check moderator permissions
-        const isModerator = message.member.permissions.has('ManageMessages') ||
-            message.member.permissions.has('ModerateMembers') ||
-            message.member.permissions.has('Administrator');
-
-        if (!isModerator) {
-            return message.reply('❌ Only moderators can remove other users\' ads.');
+        // Check admin permissions
+        if (!message.member.permissions.has('Administrator')) {
+            return message.reply('❌ Only administrators can remove user ads.');
         }
 
         if (args.length < 1) {
-            return message.reply('❌ Usage:\n`!removead @User` - Remove all ads\n`!removead @User 1` - Remove ad #1\n`!removead @User 2` - Remove ad #2');
+            return message.reply('❌ Usage:\n`!removead @User 1` - Remove ad #1\n`!removead @User 2` - Remove ad #2\n`!removead @User` - Remove all ads');
         }
 
         // Parse user mention or ID

@@ -51,10 +51,10 @@ module.exports = {
     if (isModerator) {
       embed.addFields({
         name: '🔧 Mod: Streamers *(run in private channel)*',
-        value: '`!addstreamer ninja` - Add single streamer\n' +
-          '`!addstreamers ninja, shroud, pokimane.` - Add multiple\n' +
-          '`!removestreamer ninja` - Remove streamer\n' +
-          '`!stats ninja` - View analytics',
+        value: '`!addstreamer USER1` - Add single streamer\n' +
+          '`!addstreamers USER1, USER2, USER3.` - Add multiple\n' +
+          '`!removestreamer USER1` - Remove streamer\n' +
+          '`!stats USER1` - View analytics',
         inline: false
       });
 
@@ -70,8 +70,7 @@ module.exports = {
       embed.addFields({
         name: '🎂 Mod: Birthdays',
         value: '`!addbirthday @User 03/15/1995` - Add birthday\n' +
-          '`!removebirthday @User` - Remove birthday\n' +
-          '`!removead @User` - Remove user\'s ads',
+          '`!removebirthday @User` - Remove birthday',
         inline: false
       });
     }
@@ -91,7 +90,8 @@ module.exports = {
       embed.addFields({
         name: '💾 Admin: Data',
         value: '`!backup` - View/create/restore backups\n' +
-          '`!config` - View current settings',
+          '`!config` - View current settings\n' +
+          '`!removead @User 1|2` - Remove user\'s ad',
         inline: false
       });
     }
@@ -127,14 +127,14 @@ module.exports = {
       stats: {
         title: '📊 Stats Command',
         description: 'View detailed analytics for a specific streamer.',
-        usage: '`!stats ninja`',
+        usage: '`!stats USER1`',
         options: [
           '• Total streams tracked',
           '• Peak & average viewers',
           '• Total streaming time',
           '• Top games played'
         ],
-        examples: ['`!stats ashlizzlle`'],
+        examples: ['`!stats USER1`'],
         note: '**Mod only** • Streamer must be in your monitored list.',
         requiresMod: true
       },
@@ -192,17 +192,17 @@ module.exports = {
       streamers: {
         title: '📺 Adding Streamers',
         description: 'How to add Twitch streamers to monitor.',
-        usage: '`!addstreamer username` or `!addstreamers user1, user2.`',
+        usage: '`!addstreamer USER1` or `!addstreamers USER1, USER2.`',
         options: [
-          '• **Single:** `!addstreamer ninja`',
-          '• **Multiple:** `!addstreamers ninja, shroud, pokimane.`',
+          '• **Single:** `!addstreamer USER1`',
+          '• **Multiple:** `!addstreamers USER1, USER2, USER3.`',
           '• End bulk list with a period `.`',
           '• **Run in a private/mod channel** to avoid spam'
         ],
         examples: [
-          '`!addstreamer ashlizzlle`',
-          '`!addstreamers user1, user2, user3.`',
-          '`!removestreamer baduser`'
+          '`!addstreamer twitchusername`',
+          '`!addstreamers USER1, USER2, USER3.`',
+          '`!removestreamer USER1`'
         ],
         note: '**Mod only** • Validates each username on Twitch.',
         requiresMod: true
