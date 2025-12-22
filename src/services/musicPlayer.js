@@ -120,10 +120,12 @@ class MusicPlayer {
                 addHeader: ['referer:youtube.com', 'user-agent:Mozilla/5.0']
             }, { windowsHide: true });
 
-            // Find best audio format
-            const audioFormat = info.formats.find(f =>
+            // Find best audio format - prioritize higher bitrate
+            const audioFormats = info.formats.filter(f =>
                 f.acodec !== 'none' && f.vcodec === 'none'
-            ) || info.formats.find(f => f.acodec !== 'none');
+            ).sort((a, b) => (b.abr || 0) - (a.abr || 0));
+
+            const audioFormat = audioFormats[0] || info.formats.find(f => f.acodec !== 'none');
 
             if (!audioFormat || !audioFormat.url) {
                 console.error('No audio format found');
@@ -131,11 +133,17 @@ class MusicPlayer {
                 return;
             }
 
-            console.log('🎵 Got audio URL, creating resource');
+            console.log('🎵 Audio format:', audioFormat.acodec, audioFormat.abr + 'kbps');
 
             const stream = createAudioResource(audioFormat.url, {
-                inputType: StreamType.Arbitrary
+                inputType: StreamType.Arbitrary,
+                inlineVolume: true
             });
+
+            // Set volume slightly below max to prevent clipping
+            if (stream.volume) {
+                stream.volume.setVolume(0.8);
+            }
 
             playerData.current = track;
             playerData.player.play(stream);
