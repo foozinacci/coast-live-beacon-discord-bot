@@ -5,14 +5,14 @@ module.exports = {
   description: 'Show public commands',
   async execute(message, args) {
     const embed = new EmbedBuilder()
-      .setColor('#9146FF')
+      .setColor('#00D4AA')
       .setTitle('🗼 LIVE BEACON - Commands')
-      .setDescription('Here\'s what you can do!')
+      .setDescription('Your community stream companion!')
       .addFields(
         {
           name: '📺 Streams',
-          value: '`!whoslive` - See who\'s streaming\n' +
-            '`!liststreamer` - View monitored streamers',
+          value: '`!whoslive` - Who\'s live now\n' +
+            '`!liststreamer` - Monitored streamers',
           inline: true
         },
         {
@@ -47,9 +47,23 @@ module.exports = {
         {
           name: '🎵 Music Queue',
           value: '`!addtrack [URL]` - Add track\n' +
-            '`!play` - Start playing\n' +
-            '`!myqueue` · `!queue`\n' +
-            '`!nowplaying` · `!skip`',
+            '`!removetrack [#]` - Remove\n' +
+            '`!myqueue` - Your tracks\n' +
+            '`!queue` - Full queue',
+          inline: true
+        },
+        {
+          name: '🎵 Playback',
+          value: '`!play` - Start playing\n' +
+            '`!nowplaying` - Current track\n' +
+            '`!skip` - Vote to skip',
+          inline: true
+        },
+        {
+          name: '📺 Twitch Chat',
+          value: '`!lbsr [URL]` - Request song\n' +
+            '`!lbqueue` - View queue\n' +
+            '`!lbnp` - Now playing',
           inline: true
         }
       )

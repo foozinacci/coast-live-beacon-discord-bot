@@ -16,13 +16,13 @@ module.exports = {
         const embed = new EmbedBuilder()
             .setColor('#FF6B6B')
             .setTitle('🛡️ LIVE BEACON - Mod/Admin')
-            .setDescription(isAdmin ? '👑 **Admin View**' : '🛡️ **Mod View**');
+            .setDescription(isAdmin ? '👑 **Full Admin Access**' : '🛡️ **Moderator Access**');
 
         // Streamers
         embed.addFields({
             name: '📺 Streamers',
             value: '`!addstreamer USER`\n' +
-                '`!addstreamers USER, USER.`\n' +
+                '`!addstreamers U1, U2`\n' +
                 '`!removestreamer USER`\n' +
                 '`!stats USER` · `!leaderboard`',
             inline: true
@@ -45,42 +45,49 @@ module.exports = {
             inline: true
         });
 
-        // Music
+        // Music Control
         embed.addFields({
-            name: '🎵 Music',
-            value: '`!forceskip` · `!pausemusic`\n' +
-                '`!resumemusic`\n' +
-                '`!clearqueue confirm`\n' +
-                '`!removetrack @USER [#]`\n' +
-                '`!blacklist [url]`',
+            name: '🎵 Music Control',
+            value: '`!stop` - Stop & disconnect\n' +
+                '`!forceskip` - Skip now\n' +
+                '`!pausemusic` · `!resumemusic`\n' +
+                '`!clearqueue confirm`',
+            inline: true
+        });
+
+        // Music Moderation
+        embed.addFields({
+            name: '🎵 Music Moderation',
+            value: '`!removetrack @USER [#]`\n' +
+                '`!blacklist [URL pattern]`\n' +
+                '`!unblacklist [pattern]`\n' +
+                '`!setuserlimit @USER [0-4]`',
             inline: true
         });
 
         // Admin-only
         if (isAdmin) {
             embed.addFields({
-                name: '⚙️ Admin: Setup',
+                name: '⚙️ Setup',
                 value: '`!setup` - First-time wizard\n' +
-                    '`!setchannel` - Go-live\n' +
+                    '`!setchannel` - Go-live alerts\n' +
                     '`!setupupdates` - Summaries\n' +
-                    '`!setupannouncements`\n' +
                     '`!setmusicchannel`\n' +
                     '`!setrole @ROLE`',
                 inline: true
             });
 
             embed.addFields({
-                name: '💾 Admin: Data',
-                value: '`!config` - View settings\n' +
+                name: '💾 Data & Config',
+                value: '`!config` - View all settings\n' +
+                    '`!musicstatus` - Player status\n' +
                     '`!backup` - Manage backups\n' +
-                    '`!musicstatus`\n' +
-                    '`!removead @USER 1|2`\n' +
-                    '`!clearbirthdays confirm`',
+                    '`!linktwitchchat #channel`',
                 inline: true
             });
         }
 
-        embed.setFooter({ text: isAdmin ? '👑 Administrator' : '🛡️ Moderator' });
+        embed.setFooter({ text: 'LIVE BEACON by COAST' });
         embed.setTimestamp();
 
         return message.reply({ embeds: [embed] });
