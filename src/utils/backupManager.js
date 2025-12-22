@@ -111,6 +111,51 @@ class BackupManager {
     }
 
     /**
+     * Gets details about a specific backup
+     */
+    getBackupDetails(backupName) {
+        try {
+            const backupPath = path.join(this.backupDir, backupName);
+
+            if (!fs.existsSync(backupPath)) {
+                return null;
+            }
+
+            const stats = fs.statSync(backupPath);
+            const files = fs.readdirSync(backupPath);
+
+            const details = {
+                name: backupName,
+                date: stats.mtime,
+                files: files.length
+            };
+
+            // Read each file to get details
+            for (const file of files) {
+                const filePath = path.join(backupPath, file);
+                try {
+                    const content = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+
+                    if (file === 'guilds.json') {
+                        details.guilds = content.guilds || content;
+                    } else if (file === 'announcements.json') {
+                        details.announcements = content.guilds || content;
+                    } else if (file === 'analytics.json') {
+                        details.analytics = content;
+                    }
+                } catch (e) {
+                    // Skip unreadable files
+                }
+            }
+
+            return details;
+        } catch (error) {
+            console.error('Error getting backup details:', error.message);
+            return null;
+        }
+    }
+
+    /**
      * Gets the latest backup
      */
     getLatestBackup() {
