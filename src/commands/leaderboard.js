@@ -6,8 +6,8 @@ module.exports = {
   description: 'Show streamer leaderboards (Moderator only)',
   async execute(message, args) {
     const isModerator = message.member.permissions.has('ManageMessages') ||
-                        message.member.permissions.has('ModerateMembers') ||
-                        message.member.permissions.has('Administrator');
+      message.member.permissions.has('ModerateMembers') ||
+      message.member.permissions.has('Administrator');
 
     if (!isModerator) {
       return message.reply('❌ Only moderators can view the leaderboard.');
@@ -33,7 +33,7 @@ module.exports = {
       case 'avgviewers':
         leaderboard = analytics.getLeaderboard('avgPeakViewers', 10);
         title = '🏆 Top Streamers by Average Viewers';
-        description = 'Streamers with the highest average peak viewers';
+        description = 'Streamers ranked by their average viewer count';
         break;
 
       case 'streams':
