@@ -9,7 +9,7 @@ module.exports = {
         const upcoming = storage.getUpcomingBirthdays(message.guild.id, 60); // Next 60 days
 
         if (upcoming.length === 0) {
-            return message.reply('📅 No upcoming birthdays in the next 60 days!\n\nUse `!addbirthday @User MM/DD/YYYY` to add birthdays.');
+            return message.reply('📅 No upcoming birthdays in the next 60 days!\n\nUse `!addbirthday @USER MM/DD/YYYY` to add birthdays.');
         }
 
         // Group birthdays

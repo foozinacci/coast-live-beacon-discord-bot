@@ -33,6 +33,7 @@ module.exports = {
       value: '`!whoslive` - See who\'s streaming now\n' +
         '`!liststreamer` - View monitored streamers\n' +
         '`!listbirthdays` - Upcoming birthdays\n' +
+        '`!addmybirthday MM/DD/YYYY` - Add your birthday\n' +
         '`!help` - This guide',
       inline: false
     });
