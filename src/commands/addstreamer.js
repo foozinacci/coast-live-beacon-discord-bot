@@ -1,4 +1,5 @@
 const StreamerStorage = require('../utils/streamerStorage');
+const BackupManager = require('../utils/backupManager');
 const TwitchClient = require('../api/twitchClient');
 
 module.exports = {
@@ -15,8 +16,8 @@ module.exports = {
     const guildId = message.guild.id;
 
     const isModerator = message.member.permissions.has('ManageMessages') ||
-                        message.member.permissions.has('ModerateMembers') ||
-                        message.member.permissions.has('Administrator');
+      message.member.permissions.has('ModerateMembers') ||
+      message.member.permissions.has('Administrator');
 
     const userInfo = await twitchClient.getUserInfo(username);
 
@@ -31,6 +32,10 @@ module.exports = {
     const added = storage.addStreamer(guildId, userInfo.login);
 
     if (added) {
+      // Auto-backup after adding
+      const backupManager = new BackupManager();
+      backupManager.createBackup('add-streamer');
+
       const addedBy = isModerator ? ' by a moderator' : '';
       return message.reply(`✅ Added **${userInfo.display_name}** (${userInfo.login}) to this server's monitoring list${addedBy}!`);
     } else {
@@ -38,3 +43,4 @@ module.exports = {
     }
   },
 };
+

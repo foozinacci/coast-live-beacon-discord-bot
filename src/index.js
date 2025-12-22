@@ -1,12 +1,15 @@
 require('dotenv').config();
 const { Client, GatewayIntentBits, Events, Collection } = require('discord.js');
 const StreamMonitor = require('./services/streamMonitor');
+const BirthdayAnnouncer = require('./services/birthdayAnnouncer');
+const BackupManager = require('./utils/backupManager');
 const CommandHandler = require('./handlers/commandHandler');
 
 const client = new Client({
   intents: [
     GatewayIntentBits.Guilds,
     GatewayIntentBits.GuildMessages,
+    GatewayIntentBits.GuildMembers, // For fetching member info for birthdays
     GatewayIntentBits.MessageContent,
   ],
 });
@@ -15,10 +18,19 @@ client.commands = new Collection();
 
 client.once(Events.ClientReady, async (c) => {
   console.log(`✅ Logged in as ${c.user.tag}`);
-  console.log(`📺 Starting Twitch stream monitor...`);
 
+  // Auto-backup on startup
+  console.log(`💾 Creating startup backup...`);
+  const backupManager = new BackupManager();
+  backupManager.createBackup('startup');
+
+  console.log(`📺 Starting Twitch stream monitor...`);
   const streamMonitor = new StreamMonitor(client);
   await streamMonitor.start();
+
+  console.log(`🎂 Starting birthday announcer...`);
+  const birthdayAnnouncer = new BirthdayAnnouncer(client);
+  await birthdayAnnouncer.start();
 });
 
 const commandHandler = new CommandHandler(client);

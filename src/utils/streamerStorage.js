@@ -131,6 +131,19 @@ class StreamerStorage {
     return config.roleId;
   }
 
+  setUpdatesChannel(guildId, channelId) {
+    const guilds = this.getData();
+    const config = this.getGuildConfig(guildId);
+    config.updatesChannelId = channelId;
+    guilds[guildId] = config;
+    this.saveData(guilds);
+  }
+
+  getUpdatesChannel(guildId) {
+    const config = this.getGuildConfig(guildId);
+    return config.updatesChannelId;
+  }
+
   getAllGuilds() {
     return this.getData();
   }

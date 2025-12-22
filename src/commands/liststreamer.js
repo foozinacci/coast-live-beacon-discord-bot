@@ -16,8 +16,8 @@ module.exports = {
     const embed = new EmbedBuilder()
       .setColor('#9146FF')
       .setTitle('📺 Monitored Twitch Streamers')
-      .setDescription(streamers.map((s, i) => `${i + 1}. ${s}`).join('\n'))
-      .setFooter({ text: `Total: ${streamers.length} streamer${streamers.length !== 1 ? 's' : ''}` })
+      .setDescription(streamers.map((s, i) => `${i + 1}. [${s}](https://twitch.tv/${s})`).join('\n'))
+      .setFooter({ text: `Total: ${streamers.length} streamer${streamers.length !== 1 ? 's' : ''} • Click to visit` })
       .setTimestamp();
 
     return message.reply({ embeds: [embed] });

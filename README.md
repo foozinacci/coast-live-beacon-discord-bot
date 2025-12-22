@@ -9,10 +9,14 @@ A custom Discord bot that monitors Twitch streamers and sends notifications when
 - 📺 Per-server streamer lists
 - 📢 Customizable notification channels per server
 - 👥 Configurable role mentions per server
-- 🎨 Rich embed notifications with stream details
+- 🎨 Rich embed notifications with stream details and large preview images
 - ⚡ Easy management with simple commands
 - 📊 **Analytics tracking** - Track stream frequency, games, peak times, and viewer stats
 - 🔐 **Permission-based commands** - Moderators control streamer list, everyone can view
+- ⏱️ **Smart notifications** - 60-second delay to capture accurate viewer counts
+- 🛡️ **Offline cooldown** - Prevents notification spam if streamers briefly disconnect
+- 🔄 **Graceful restarts** - Won't re-notify for streams already live on bot restart
+- 🎮 **Game change tracking** - Logs when streamers switch games mid-stream
 - 💰 Completely free and open source
 
 ## Prerequisites
@@ -104,6 +108,8 @@ TWITCH_CLIENT_SECRET=your_twitch_client_secret_here
 
 # Bot Configuration
 CHECK_INTERVAL=60000
+NOTIFICATION_DELAY=60000
+OFFLINE_COOLDOWN=120000
 ```
 
 **Important:**
@@ -218,6 +224,22 @@ The `CHECK_INTERVAL` in `.env` controls how often the bot checks for live stream
 - Less frequent: `120000` (2 minutes)
 
 Lower values = faster notifications but more API calls.
+
+### Notification Delay
+
+The `NOTIFICATION_DELAY` in `.env` controls how long to wait before sending a go-live notification (in milliseconds):
+
+- Default: `60000` (60 seconds / 1 minute)
+- Why: Allows viewers to join before the notification is sent, so the viewer count in the embed is accurate
+- Set to `0` to disable the delay and notify immediately
+
+### Offline Cooldown
+
+The `OFFLINE_COOLDOWN` in `.env` prevents rapid notifications if a streamer briefly disconnects (in milliseconds):
+
+- Default: `120000` (2 minutes)
+- If a streamer goes offline and back online within this period, no new notification is sent
+- Prevents spam from connection issues
 
 ## Sharing Your Bot
 
