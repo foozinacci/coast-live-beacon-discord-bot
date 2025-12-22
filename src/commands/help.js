@@ -47,10 +47,9 @@ module.exports = {
         {
           name: '🎵 Music Queue',
           value: '`!addtrack [URL]` - Add track\n' +
-            '`!myqueue` - Your tracks\n' +
-            '`!queue` - Full queue\n' +
-            '`!nowplaying` - Current\n' +
-            '`!skip` - Vote skip',
+            '`!play` - Start playing\n' +
+            '`!myqueue` · `!queue`\n' +
+            '`!nowplaying` · `!skip`',
           inline: true
         }
       )
