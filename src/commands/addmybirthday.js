@@ -29,7 +29,7 @@ module.exports = {
         }
 
         // Format as ISO date
-        const birthDate = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+        const birthDate = year + '-' + String(month).padStart(2, '0') + '-' + String(day).padStart(2, '0');
 
         // Get Discord join date
         const member = message.member;
@@ -44,15 +44,23 @@ module.exports = {
             discordJoinDate
         );
 
-        // Calculate age
-        const today = new Date();
-        const birthDateObj = new Date(birthDate);
-        let age = today.getFullYear() - birthDateObj.getFullYear();
-        const monthDiff = today.getMonth() - birthDateObj.getMonth();
-        if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDateObj.getDate())) {
-            age--;
-        }
+        // Format display date
+        const months = ['January', 'February', 'March', 'April', 'May', 'June',
+            'July', 'August', 'September', 'October', 'November', 'December'];
+        const formattedDate = months[month - 1] + ' ' + day + ', ' + year;
 
-        return message.reply('🎂 Your birthday has been added! (**' + month + '/' + day + '/' + year + '**)\n\n*You\'ll get a shoutout on your special day!*');
+        // Calculate next birthday
+        const today = new Date();
+        let nextBirthday = new Date(today.getFullYear(), month - 1, day);
+        if (nextBirthday < today) {
+            nextBirthday = new Date(today.getFullYear() + 1, month - 1, day);
+        }
+        const daysUntil = Math.ceil((nextBirthday - today) / (1000 * 60 * 60 * 24));
+        const turningAge = nextBirthday.getFullYear() - year;
+
+        return message.reply('🎂 Your birthday has been added!\n\n' +
+            '📅 **Birthday:** ' + formattedDate + '\n' +
+            '🎈 **Next Birthday:** In ' + daysUntil + ' days (turning ' + turningAge + ')\n\n' +
+            '*You\'ll get a personalized announcement on your special day!* 🎉');
     },
 };
