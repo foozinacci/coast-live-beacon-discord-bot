@@ -5,8 +5,9 @@ const {
     AudioPlayerStatus,
     VoiceConnectionStatus,
     entersState,
-    getVoiceConnection
+    StreamType
 } = require('@discordjs/voice');
+const ytdl = require('@distube/ytdl-core');
 const play = require('play-dl');
 const { EmbedBuilder } = require('discord.js');
 const QueueStorage = require('../utils/queueStorage');
@@ -14,7 +15,7 @@ const QueueStorage = require('../utils/queueStorage');
 class MusicPlayer {
     constructor(client) {
         this.client = client;
-        this.players = new Map(); // guildId -> { player, connection, current }
+        this.players = new Map();
         this.queueStorage = new QueueStorage();
         this.idleTimers = new Map();
     }
@@ -46,7 +47,7 @@ class MusicPlayer {
             });
 
             player.on('error', error => {
-                console.error('Audio player error:', error);
+                console.error('Audio player error:', error.message);
                 this.playNext(guildId);
             });
         }
@@ -64,10 +65,10 @@ class MusicPlayer {
 
         if (!playerData.connection || playerData.connection.state.status === VoiceConnectionStatus.Destroyed) {
             try {
-                console.log('🎵 Attempting to join voice channel:', voiceChannel.name);
+                console.log('🎵 Joining voice channel:', voiceChannel.name);
                 playerData.connection = await this.joinChannel(voiceChannel);
                 playerData.connection.subscribe(playerData.player);
-                console.log('🎵 Successfully joined voice channel');
+                console.log('🎵 Connected and subscribed');
             } catch (error) {
                 console.error('Voice connection error:', error);
                 return { success: false, error: 'Could not join voice channel: ' + error.message };
@@ -87,40 +88,45 @@ class MusicPlayer {
             return;
         }
 
-        console.log('🎵 Next track:', track.title, 'URL:', track.url, 'Platform:', track.platform);
+        console.log('🎵 Playing:', track.title, '- URL:', track.url);
 
         this.clearIdleTimer(guildId);
 
         try {
             let stream;
 
-            if (track.platform === 'youtube') {
-                if (!track.url || track.url === 'undefined') {
-                    console.error('Invalid YouTube URL for track:', track.title);
-                    this.playNext(guildId);
-                    return;
+            if (track.platform === 'youtube' || track.platform === 'spotify') {
+                let videoUrl = track.url;
+
+                // For Spotify, search YouTube first
+                if (track.platform === 'spotify') {
+                    const searchQuery = track.title + ' ' + track.artist;
+                    console.log('🎵 Searching YouTube for:', searchQuery);
+                    const searched = await play.search(searchQuery, { limit: 1 });
+                    if (searched.length === 0) {
+                        console.error('No YouTube match for Spotify track');
+                        this.playNext(guildId);
+                        return;
+                    }
+                    videoUrl = searched[0].url;
                 }
-                console.log('🎵 Streaming from YouTube:', track.url);
-                const ytStream = await play.stream(track.url);
-                console.log('🎵 Got stream, type:', ytStream.type);
-                stream = createAudioResource(ytStream.stream, { inputType: ytStream.type });
+
+                console.log('🎵 Streaming:', videoUrl);
+
+                // Use ytdl-core for YouTube streaming
+                const ytStream = ytdl(videoUrl, {
+                    filter: 'audioonly',
+                    quality: 'highestaudio',
+                    highWaterMark: 1 << 25
+                });
+
+                stream = createAudioResource(ytStream, {
+                    inputType: StreamType.Arbitrary
+                });
             } else if (track.platform === 'soundcloud') {
                 const scStream = await play.stream(track.url);
                 stream = createAudioResource(scStream.stream, { inputType: scStream.type });
-            } else if (track.platform === 'spotify') {
-                // Spotify: search YouTube for the song and play that
-                const searchQuery = track.title + ' ' + track.artist;
-                console.log('🎵 Searching YouTube for Spotify track:', searchQuery);
-                const searched = await play.search(searchQuery, { limit: 1 });
-                if (searched.length === 0) {
-                    console.error('No YouTube match found for Spotify track:', searchQuery);
-                    this.playNext(guildId);
-                    return;
-                }
-                const ytStream = await play.stream(searched[0].url);
-                stream = createAudioResource(ytStream.stream, { inputType: ytStream.type });
             } else {
-                // Direct audio link
                 stream = createAudioResource(track.url);
             }
 
@@ -128,10 +134,10 @@ class MusicPlayer {
             playerData.player.play(stream);
             this.queueStorage.markPlayed(guildId, track.id);
 
-            // Update now playing
+            console.log('🎵 Playback started!');
             await this.updateNowPlaying(guildId, track);
         } catch (error) {
-            console.error('Error playing track:', error);
+            console.error('Error playing track:', error.message);
             this.playNext(guildId);
         }
     }
@@ -205,8 +211,8 @@ class MusicPlayer {
         this.clearIdleTimer(guildId);
         const timer = setTimeout(() => {
             this.stop(guildId);
-            console.log('Music stopped due to idle timeout in guild ' + guildId);
-        }, 10 * 60 * 1000); // 10 minutes
+            console.log('Music stopped due to idle timeout');
+        }, 10 * 60 * 1000);
         this.idleTimers.set(guildId, timer);
     }
 
