@@ -1,56 +1,75 @@
 const { EmbedBuilder } = require('discord.js');
 const StreamerStorage = require('../utils/streamerStorage');
 const AnnouncementStorage = require('../utils/announcementStorage');
+const QueueStorage = require('../utils/queueStorage');
 
 module.exports = {
   name: 'config',
-  description: 'Show current server configuration',
+  description: 'View or update server configuration (Admin only)',
   async execute(message, args) {
-    const storage = new StreamerStorage();
+    if (!message.member.permissions.has('Administrator')) {
+      return message.reply('❌ Only administrators can view config.');
+    }
+
+    const streamerStorage = new StreamerStorage();
     const announcementStorage = new AnnouncementStorage();
+    const queueStorage = new QueueStorage();
     const guildId = message.guild.id;
-    const config = storage.getGuildConfig(guildId);
+
+    const streamerConfig = streamerStorage.getGuildConfig(guildId);
     const announcementConfig = announcementStorage.getGuildConfig(guildId);
+    const queueConfig = queueStorage.getGuildQueue(guildId);
 
-    const channelText = config.notificationChannelId
-      ? `<#${config.notificationChannelId}>`
-      : '❌ Not set (use `!setchannel`)';
+    // Format channels
+    const goLiveChannel = streamerConfig.notificationChannelId
+      ? '<#' + streamerConfig.notificationChannelId + '>' : 'Not set';
+    const updatesChannel = streamerConfig.updatesChannelId
+      ? '<#' + streamerConfig.updatesChannelId + '>' : 'Not set';
+    const announcementsChannel = announcementConfig.announcementsChannelId
+      ? '<#' + announcementConfig.announcementsChannelId + '>' : 'Not set';
+    const musicChannel = queueConfig.musicChannelId
+      ? '<#' + queueConfig.musicChannelId + '>' : 'Not set';
+    const pingRole = streamerConfig.roleId
+      ? '<@&' + streamerConfig.roleId + '>' : 'Not set';
 
-    const roleText = config.roleId
-      ? `<@&${config.roleId}>`
-      : '❌ Not set (use `!setrole @RoleName`)';
-
-    const updatesText = config.updatesChannelId
-      ? `<#${config.updatesChannelId}>`
-      : '❌ Not set (use `!setupupdates`)';
-
-    const announcementsText = announcementConfig.announcementsChannelId
-      ? `<#${announcementConfig.announcementsChannelId}>`
-      : '❌ Not set (use `!setupannouncements`)';
-
-    const streamersText = config.streamers.length > 0
-      ? config.streamers.join(', ')
-      : 'None (ask a moderator to use `!addstreamer`)';
-
+    // Count data
+    const streamerCount = streamerConfig.streamers?.length || 0;
     const birthdayCount = Object.keys(announcementConfig.birthdays || {}).length;
-    const adCount = (announcementConfig.customAds || []).length;
+    const adCount = Object.keys(announcementConfig.userAds || {}).reduce((sum, userId) => {
+      const userAds = announcementConfig.userAds[userId];
+      return sum + (userAds ? Object.keys(userAds).length : 0);
+    }, 0);
+    const queueCount = queueConfig.tracks?.length || 0;
 
     const embed = new EmbedBuilder()
       .setColor('#9146FF')
       .setTitle('⚙️ Server Configuration')
       .addFields(
-        { name: '📺 Go-Live Notifications', value: channelText, inline: true },
-        { name: '📊 Stream Summaries (Mod)', value: updatesText, inline: true },
-        { name: '🎂 Announcements', value: announcementsText, inline: true },
-        { name: '👥 Mention Role', value: roleText, inline: true },
-        { name: '🎂 Birthdays Tracked', value: birthdayCount.toString(), inline: true },
-        { name: '📢 Promo Ads', value: adCount.toString(), inline: true },
-        { name: '🎮 Monitored Streamers', value: streamersText, inline: false }
+        {
+          name: '📺 Channels',
+          value: '**Go-Live:** ' + goLiveChannel + '\n' +
+            '**Summaries:** ' + updatesChannel + '\n' +
+            '**Announcements:** ' + announcementsChannel + '\n' +
+            '**Music:** ' + musicChannel,
+          inline: true
+        },
+        {
+          name: '📋 Roles',
+          value: '**Ping Role:** ' + pingRole,
+          inline: true
+        },
+        {
+          name: '📊 Data',
+          value: '**Streamers:** ' + streamerCount + '\n' +
+            '**Birthdays:** ' + birthdayCount + '\n' +
+            '**Ads:** ' + adCount + '\n' +
+            '**Queue:** ' + queueCount + ' tracks',
+          inline: true
+        }
       )
-      .setFooter({ text: `Server ID: ${guildId}` })
+      .setFooter({ text: 'Use setup commands to modify' })
       .setTimestamp();
 
     return message.reply({ embeds: [embed] });
   },
 };
-
