@@ -195,6 +195,86 @@ class AnalyticsStorage {
     const data = this.getData();
     return data.activeStreams;
   }
+
+  /**
+   * Get weekly aggregated stats for charts
+   * Returns last 8 weeks of data
+   */
+  getWeeklyStats(streamerLogin) {
+    const data = this.getData();
+    const sessions = data.sessions[streamerLogin];
+
+    if (!sessions || sessions.length === 0) {
+      return null;
+    }
+
+    // Group sessions by week
+    const weeklyData = {};
+    const now = new Date();
+
+    sessions.forEach(session => {
+      const startDate = new Date(session.startTime);
+      // Get week number (weeks ago from now)
+      const diffTime = now - startDate;
+      const diffWeeks = Math.floor(diffTime / (1000 * 60 * 60 * 24 * 7));
+
+      if (diffWeeks >= 8) return; // Only last 8 weeks
+
+      const weekKey = 'W' + (8 - diffWeeks);
+
+      if (!weeklyData[weekKey]) {
+        weeklyData[weekKey] = {
+          peakViewers: 0,
+          totalViewers: 0,
+          viewerSamples: 0,
+          streamCount: 0,
+          totalDuration: 0
+        };
+      }
+
+      weeklyData[weekKey].streamCount++;
+      weeklyData[weekKey].totalDuration += session.duration || 0;
+
+      if (session.peakViewers > weeklyData[weekKey].peakViewers) {
+        weeklyData[weekKey].peakViewers = session.peakViewers;
+      }
+
+      // For average, track totals
+      if (session.viewerCounts && session.viewerCounts.length > 0) {
+        const sessionAvg = session.viewerCounts.reduce((a, b) => a + b, 0) / session.viewerCounts.length;
+        weeklyData[weekKey].totalViewers += sessionAvg;
+        weeklyData[weekKey].viewerSamples++;
+      }
+    });
+
+    // Convert to arrays for chart
+    const labels = [];
+    const peakViewers = [];
+    const avgViewers = [];
+    const streamCount = [];
+    const totalHours = [];
+
+    // Sort weeks and fill data
+    for (let i = 1; i <= 8; i++) {
+      const weekKey = 'W' + i;
+      labels.push(weekKey);
+
+      if (weeklyData[weekKey]) {
+        const week = weeklyData[weekKey];
+        peakViewers.push(week.peakViewers);
+        avgViewers.push(week.viewerSamples > 0 ? Math.round(week.totalViewers / week.viewerSamples) : 0);
+        streamCount.push(week.streamCount);
+        totalHours.push(Math.round(week.totalDuration / (1000 * 60 * 60) * 10) / 10); // Hours with 1 decimal
+      } else {
+        peakViewers.push(0);
+        avgViewers.push(0);
+        streamCount.push(0);
+        totalHours.push(0);
+      }
+    }
+
+    return { labels, peakViewers, avgViewers, streamCount, totalHours };
+  }
 }
 
 module.exports = AnalyticsStorage;

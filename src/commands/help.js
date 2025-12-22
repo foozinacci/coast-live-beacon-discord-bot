@@ -52,10 +52,10 @@ module.exports = {
     if (isModerator) {
       embed.addFields({
         name: '🔧 Mod: Streamers *(run in private channel)*',
-        value: '`!addstreamer USER1` - Add single streamer\n' +
-          '`!addstreamers USER1, USER2, USER3.` - Add multiple\n' +
-          '`!removestreamer USER1` - Remove streamer\n' +
-          '`!stats USER1` - View analytics',
+        value: '`!addstreamer USER` - Add single streamer\n' +
+          '`!addstreamers USER, USER2, USER3.` - Add multiple\n' +
+          '`!removestreamer USER` - Remove streamer\n' +
+          '`!stats USER` - View analytics',
         inline: false
       });
 
@@ -128,14 +128,14 @@ module.exports = {
       stats: {
         title: '📊 Stats Command',
         description: 'View detailed analytics for a specific streamer.',
-        usage: '`!stats USER1`',
+        usage: '`!stats USER`',
         options: [
           '• Total streams tracked',
           '• Peak & average viewers',
           '• Total streaming time',
           '• Top games played'
         ],
-        examples: ['`!stats USER1`'],
+        examples: ['`!stats USER`'],
         note: '**Mod only** • Streamer must be in your monitored list.',
         requiresMod: true
       },
@@ -193,17 +193,17 @@ module.exports = {
       streamers: {
         title: '📺 Adding Streamers',
         description: 'How to add Twitch streamers to monitor.',
-        usage: '`!addstreamer USER1` or `!addstreamers USER1, USER2.`',
+        usage: '`!addstreamer USER` or `!addstreamers USER, USER2.`',
         options: [
-          '• **Single:** `!addstreamer USER1`',
-          '• **Multiple:** `!addstreamers USER1, USER2, USER3.`',
+          '• **Single:** `!addstreamer USER`',
+          '• **Multiple:** `!addstreamers USER, USER2, USER3.`',
           '• End bulk list with a period `.`',
           '• **Run in a private/mod channel** to avoid spam'
         ],
         examples: [
           '`!addstreamer twitchusername`',
-          '`!addstreamers USER1, USER2, USER3.`',
-          '`!removestreamer USER1`'
+          '`!addstreamers USER, USER2, USER3.`',
+          '`!removestreamer USER`'
         ],
         note: '**Mod only** • Validates each username on Twitch.',
         requiresMod: true
