@@ -42,6 +42,10 @@ client.once(Events.ClientReady, async (c) => {
   const adScheduler = new AdScheduler(client);
   adScheduler.start();
 
+  console.log('🎵 Initializing music player...');
+  const MusicPlayer = require('./services/musicPlayer');
+  client.musicPlayer = new MusicPlayer(client);
+
   console.log('⭐ XP and streak tracking active');
 });
 

@@ -7,12 +7,20 @@
     "start": "node src/index.js",
     "dev": "node --watch src/index.js"
   },
-  "keywords": ["discord", "twitch", "bot", "notifications"],
+  "keywords": [
+    "discord",
+    "twitch",
+    "bot",
+    "notifications"
+  ],
   "author": "",
   "license": "MIT",
   "dependencies": {
-    "discord.js": "^14.14.1",
+    "@discordjs/voice": "^0.19.0",
     "axios": "^1.6.5",
-    "dotenv": "^16.3.1"
+    "discord.js": "^14.14.1",
+    "dotenv": "^16.3.1",
+    "play-dl": "^1.9.7",
+    "sodium-native": "^5.0.10"
   }
 }
