@@ -46,7 +46,7 @@ module.exports = {
                 { name: '👥 Submitters', value: String(uniqueUsers), inline: true },
                 { name: '⏱️ Total Duration', value: totalDuration, inline: true }
             )
-            .setFooter({ text: uniqueUsers >= 4 ? '✅ Loop ready!' : '⏳ Need ' + (4 - uniqueUsers) + ' more submitters' })
+            .setFooter({ text: '✅ Ready to play! Use !play to start' })
             .setTimestamp();
 
         if (queue.tracks.length > 10) {
