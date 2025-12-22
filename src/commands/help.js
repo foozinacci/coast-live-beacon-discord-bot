@@ -42,7 +42,7 @@ module.exports = {
       name: '📢 Your Ads (max 2)',
       value: '`!addad 14:30 https://link.com` - Schedule daily ad\n' +
         '`!myads` - View your ads\n' +
-        '`!removemyad 1` or `2` - Remove your ad\n' +
+        '`!removemyad 1|2` - Remove your ad\n' +
         '*Ad time in 24hr format (14:30 = 2:30 PM)*',
       inline: false
     });
@@ -83,7 +83,7 @@ module.exports = {
           '`!setchannel` - Go-live notifications\n' +
           '`!setupupdates` - Stream summaries (mod-only)\n' +
           '`!setupannouncements` - Birthdays & ads\n' +
-          '`!setrole @StreamerRole` - Ping role for go-live',
+          '`!setrole @ROLE` - Ping role for go-live',
         inline: false
       });
 
