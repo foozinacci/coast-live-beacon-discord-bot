@@ -63,15 +63,15 @@ class TwitchChat {
         const command = args[0].toLowerCase();
 
         switch (command) {
-            case '!sr':
-            case '!songrequest':
+            case '!lbsr':
+            case '!lbsongrequest':
                 await this.handleSongRequest(cleanChannel, tags, args.slice(1), guildId);
                 break;
-            case '!queue':
+            case '!lbqueue':
                 await this.handleQueue(cleanChannel, guildId);
                 break;
-            case '!nowplaying':
-            case '!np':
+            case '!lbnp':
+            case '!lbnowplaying':
                 await this.handleNowPlaying(cleanChannel, guildId);
                 break;
         }
@@ -89,7 +89,7 @@ class TwitchChat {
         }
 
         if (args.length === 0) {
-            this.say(channel, '@' + twitchUser + ' Usage: !sr [YouTube/SoundCloud URL]');
+            this.say(channel, '@' + twitchUser + ' Usage: !lbsr [YouTube/Spotify URL]');
             return;
         }
 
