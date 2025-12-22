@@ -4,6 +4,20 @@ module.exports = {
     name: 'addmybirthday',
     description: 'Add your own birthday',
     async execute(message, args) {
+        const storage = new AnnouncementStorage();
+        const guildId = message.guild.id;
+        const userId = message.author.id;
+
+        // Check if birthday already exists
+        const existing = storage.getBirthday(guildId, userId);
+        if (existing) {
+            const [year, month, day] = existing.birthDate.split('-').map(Number);
+            const months = ['January', 'February', 'March', 'April', 'May', 'June',
+                'July', 'August', 'September', 'October', 'November', 'December'];
+            return message.reply('⚠️ Your birthday is already set to **' + months[month - 1] + ' ' + day + ', ' + year + '**\n\n' +
+                'Use `!removemybirthday` to remove it first if you need to change it.');
+        }
+
         if (args.length === 0) {
             return message.reply('❌ Usage: `!addmybirthday MM/DD/YYYY`\n\nExample: `!addmybirthday 03/15/1995`');
         }
@@ -35,10 +49,9 @@ module.exports = {
         const member = message.member;
         const discordJoinDate = member.joinedAt ? member.joinedAt.toISOString() : null;
 
-        const storage = new AnnouncementStorage();
         storage.addBirthday(
-            message.guild.id,
-            message.author.id,
+            guildId,
+            userId,
             message.author.username,
             birthDate,
             discordJoinDate

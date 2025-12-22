@@ -81,6 +81,18 @@ module.exports = {
         const discordJoinDate = targetUser.joinedAt.toISOString();
 
         const storage = new AnnouncementStorage();
+
+        // Check if birthday already exists
+        const existing = storage.getBirthday(message.guild.id, targetUser.id);
+        if (existing) {
+            const [eYear, eMonth, eDay] = existing.birthDate.split('-').map(Number);
+            const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
+                'July', 'August', 'September', 'October', 'November', 'December'];
+            return message.reply('⚠️ **' + targetUser.user.username + '** already has a birthday set: **' +
+                monthNames[eMonth - 1] + ' ' + eDay + ', ' + eYear + '**\n\n' +
+                'Use `!removebirthday @USER` first to change it.');
+        }
+
         storage.addBirthday(
             message.guild.id,
             targetUser.id,
