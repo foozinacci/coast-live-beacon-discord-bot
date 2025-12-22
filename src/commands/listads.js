@@ -3,54 +3,50 @@ const AnnouncementStorage = require('../utils/announcementStorage');
 
 module.exports = {
     name: 'listads',
-    description: 'View all promotional ads configured for this server',
+    description: 'View all scheduled ads in this server',
     async execute(message, args) {
-        const isModerator = message.member.permissions.has('ManageMessages') ||
-            message.member.permissions.has('ModerateMembers') ||
-            message.member.permissions.has('Administrator');
-
-        if (!isModerator) {
-            return message.reply('❌ Only moderators can view ads.');
-        }
-
         const storage = new AnnouncementStorage();
-        const guildAds = storage.getGuildAds(message.guild.id);
-        const globalAds = storage.getPromotionalAds();
+        const guildId = message.guild.id;
+        const allUserAds = storage.getAllUserAds(guildId);
 
-        if (guildAds.length === 0 && globalAds.length === 0) {
-            return message.reply('📢 No promotional ads configured!\n\nUse `!addad <name> <url> [description]` to add one.');
+        const userIds = Object.keys(allUserAds);
+
+        if (userIds.length === 0) {
+            return message.reply('📢 No scheduled ads in this server.\n\nUsers can add ads with `!addad <HH:MM> <url> <message>`');
         }
+
+        // Build list of all ads
+        let adList = [];
+        let totalAds = 0;
+
+        for (const userId of userIds) {
+            const ads = allUserAds[userId];
+            for (let i = 0; i < ads.length; i++) {
+                const ad = ads[i];
+                adList.push({
+                    username: ad.username,
+                    time: ad.scheduledTime,
+                    name: ad.name,
+                    url: ad.url,
+                    description: ad.description
+                });
+                totalAds++;
+            }
+        }
+
+        // Sort by time
+        adList.sort((a, b) => a.time.localeCompare(b.time));
 
         const embed = new EmbedBuilder()
             .setColor('#9146FF')
-            .setTitle('📢 Promotional Ads')
+            .setTitle('📢 Scheduled Ads')
+            .setDescription(
+                adList.map(ad =>
+                    `⏰ **${ad.time}** - [${ad.name}](${ad.url})\n   📝 ${ad.description || '*No message*'}\n   👤 ${ad.username}`
+                ).join('\n\n')
+            )
+            .setFooter({ text: `${totalAds} ad(s) from ${userIds.length} user(s) • Posts daily` })
             .setTimestamp();
-
-        if (guildAds.length > 0) {
-            const guildAdsList = guildAds.map((ad, i) =>
-                `**${i + 1}.** [${ad.name}](${ad.url})${ad.description ? `\n   └ ${ad.description}` : ''}`
-            ).join('\n\n');
-
-            embed.addFields({
-                name: '🏠 Server Ads',
-                value: guildAdsList,
-                inline: false
-            });
-        }
-
-        if (globalAds.length > 0) {
-            const globalAdsList = globalAds.map((ad, i) =>
-                `**${i + 1}.** [${ad.name}](${ad.url})${ad.description ? `\n   └ ${ad.description}` : ''}`
-            ).join('\n\n');
-
-            embed.addFields({
-                name: '🌐 Global Ads (All Servers)',
-                value: globalAdsList,
-                inline: false
-            });
-        }
-
-        embed.setFooter({ text: `${guildAds.length} server ads • ${globalAds.length} global ads` });
 
         return message.reply({ embeds: [embed] });
     },

@@ -2,6 +2,7 @@ require('dotenv').config();
 const { Client, GatewayIntentBits, Events, Collection } = require('discord.js');
 const StreamMonitor = require('./services/streamMonitor');
 const BirthdayAnnouncer = require('./services/birthdayAnnouncer');
+const AdScheduler = require('./services/adScheduler');
 const BackupManager = require('./utils/backupManager');
 const CommandHandler = require('./handlers/commandHandler');
 
@@ -9,7 +10,7 @@ const client = new Client({
   intents: [
     GatewayIntentBits.Guilds,
     GatewayIntentBits.GuildMessages,
-    GatewayIntentBits.GuildMembers, // For fetching member info for birthdays
+    GatewayIntentBits.GuildMembers,
     GatewayIntentBits.MessageContent,
   ],
 });
@@ -31,6 +32,10 @@ client.once(Events.ClientReady, async (c) => {
   console.log(`🎂 Starting birthday announcer...`);
   const birthdayAnnouncer = new BirthdayAnnouncer(client);
   await birthdayAnnouncer.start();
+
+  console.log(`📢 Starting ad scheduler...`);
+  const adScheduler = new AdScheduler(client);
+  adScheduler.start();
 });
 
 const commandHandler = new CommandHandler(client);

@@ -231,6 +231,149 @@ class AnnouncementStorage {
 
         return configured;
     }
+
+    // ================== USER AD SYSTEM ==================
+
+    /**
+     * Add a user's scheduled ad (max 2 per user)
+     * @param {string} guildId 
+     * @param {string} userId 
+     * @param {string} username 
+     * @param {string} name - Ad name
+     * @param {string} url - Ad URL
+     * @param {string} description - Ad description
+     * @param {string} scheduledTime - HH:MM format
+     */
+    addUserAd(guildId, userId, username, name, url, description, scheduledTime) {
+        const data = this.getData();
+        const config = this.getGuildConfig(guildId);
+
+        if (!config.userAds) config.userAds = {};
+        if (!config.userAds[userId]) config.userAds[userId] = [];
+
+        // Check limit
+        if (config.userAds[userId].length >= 2) {
+            return { success: false, error: 'You already have 2 ads. Remove one first with `!myads remove 1` or `!myads remove 2`' };
+        }
+
+        // Validate time format
+        if (!/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/.test(scheduledTime)) {
+            return { success: false, error: 'Invalid time format. Use HH:MM (24-hour), e.g., 14:30' };
+        }
+
+        config.userAds[userId].push({
+            username,
+            name,
+            url,
+            description,
+            scheduledTime,
+            createdAt: Date.now(),
+            lastPosted: null
+        });
+
+        data.guilds[guildId] = config;
+        this.saveData(data);
+        return { success: true, count: config.userAds[userId].length };
+    }
+
+    /**
+     * Remove a user's ad by index (1 or 2)
+     */
+    removeUserAd(guildId, userId, index) {
+        const data = this.getData();
+        const config = this.getGuildConfig(guildId);
+
+        if (!config.userAds || !config.userAds[userId]) {
+            return { success: false, error: 'User has no ads' };
+        }
+
+        const ads = config.userAds[userId];
+        const arrayIndex = index - 1; // Convert to 0-indexed
+
+        if (arrayIndex < 0 || arrayIndex >= ads.length) {
+            return { success: false, error: `Invalid index. User has ${ads.length} ad(s).` };
+        }
+
+        const removed = ads.splice(arrayIndex, 1)[0];
+        data.guilds[guildId] = config;
+        this.saveData(data);
+        return { success: true, removed };
+    }
+
+    /**
+     * Remove ALL ads for a specific user (mod action)
+     */
+    removeAllUserAds(guildId, userId) {
+        const data = this.getData();
+        const config = this.getGuildConfig(guildId);
+
+        if (!config.userAds || !config.userAds[userId]) {
+            return { success: false, error: 'User has no ads' };
+        }
+
+        const count = config.userAds[userId].length;
+        delete config.userAds[userId];
+        data.guilds[guildId] = config;
+        this.saveData(data);
+        return { success: true, count };
+    }
+
+    /**
+     * Get a user's ads
+     */
+    getUserAds(guildId, userId) {
+        const config = this.getGuildConfig(guildId);
+        if (!config.userAds) return [];
+        return config.userAds[userId] || [];
+    }
+
+    /**
+     * Get all user ads for a guild
+     */
+    getAllUserAds(guildId) {
+        const config = this.getGuildConfig(guildId);
+        return config.userAds || {};
+    }
+
+    /**
+     * Get all ads scheduled for a specific time (HH:MM)
+     */
+    getAdsForTime(guildId, time) {
+        const config = this.getGuildConfig(guildId);
+        if (!config.userAds) return [];
+
+        const matches = [];
+        const today = new Date().toDateString();
+
+        for (const [userId, ads] of Object.entries(config.userAds)) {
+            for (let i = 0; i < ads.length; i++) {
+                const ad = ads[i];
+                if (ad.scheduledTime === time) {
+                    // Check if already posted today
+                    const lastPosted = ad.lastPosted ? new Date(ad.lastPosted).toDateString() : null;
+                    if (lastPosted !== today) {
+                        matches.push({ userId, index: i, ...ad });
+                    }
+                }
+            }
+        }
+
+        return matches;
+    }
+
+    /**
+     * Mark an ad as posted
+     */
+    markAdPosted(guildId, userId, index) {
+        const data = this.getData();
+        const config = this.getGuildConfig(guildId);
+
+        if (config.userAds && config.userAds[userId] && config.userAds[userId][index]) {
+            config.userAds[userId][index].lastPosted = Date.now();
+            data.guilds[guildId] = config;
+            this.saveData(data);
+        }
+    }
 }
 
 module.exports = AnnouncementStorage;
