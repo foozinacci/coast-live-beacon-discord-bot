@@ -2,13 +2,15 @@ const { EmbedBuilder } = require('discord.js');
 const StreamerStorage = require('../utils/streamerStorage');
 const AnnouncementStorage = require('../utils/announcementStorage');
 const QueueStorage = require('../utils/queueStorage');
+const fs = require('fs');
+const path = require('path');
 
 module.exports = {
   name: 'config',
-  description: 'View or update server configuration (Admin only)',
+  description: 'View server configuration (Admin only)',
   async execute(message, args) {
     if (!message.member.permissions.has('Administrator')) {
-      return message.reply('❌ Only administrators can view config.');
+      return message.reply('❌ Admins only.');
     }
 
     const streamerStorage = new StreamerStorage();
@@ -19,6 +21,18 @@ module.exports = {
     const streamerConfig = streamerStorage.getGuildConfig(guildId);
     const announcementConfig = announcementStorage.getGuildConfig(guildId);
     const queueConfig = queueStorage.getGuildQueue(guildId);
+
+    // Load Twitch config
+    let twitchChannel = 'Not linked';
+    try {
+      const twitchPath = path.join(__dirname, '../../data/twitchLinks.json');
+      if (fs.existsSync(twitchPath)) {
+        const twitchConfig = JSON.parse(fs.readFileSync(twitchPath, 'utf8'));
+        if (twitchConfig[guildId]) {
+          twitchChannel = '`' + twitchConfig[guildId].channel + '`';
+        }
+      }
+    } catch (e) { }
 
     // Format channels
     const goLiveChannel = streamerConfig.notificationChannelId
@@ -42,7 +56,7 @@ module.exports = {
     const queueCount = queueConfig.tracks?.length || 0;
 
     const embed = new EmbedBuilder()
-      .setColor('#9146FF')
+      .setColor('#00D4AA')
       .setTitle('⚙️ Server Configuration')
       .addFields(
         {
@@ -54,8 +68,9 @@ module.exports = {
           inline: true
         },
         {
-          name: '📋 Roles',
-          value: '**Ping Role:** ' + pingRole,
+          name: '🔗 Integrations',
+          value: '**Ping Role:** ' + pingRole + '\n' +
+            '**Twitch Chat:** ' + twitchChannel,
           inline: true
         },
         {
@@ -67,7 +82,7 @@ module.exports = {
           inline: true
         }
       )
-      .setFooter({ text: 'Use setup commands to modify' })
+      .setFooter({ text: 'Use !adminhelp for setup commands' })
       .setTimestamp();
 
     return message.reply({ embeds: [embed] });

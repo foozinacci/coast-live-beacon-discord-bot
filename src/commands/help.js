@@ -6,20 +6,13 @@ module.exports = {
   async execute(message, args) {
     const embed = new EmbedBuilder()
       .setColor('#00D4AA')
-      .setTitle('🗼 LIVE BEACON - Commands')
-      .setDescription('Your community stream companion!')
+      .setTitle('🎯 LIVE BEACON - Commands')
+      .setDescription('Here\'s what you can do!')
       .addFields(
         {
           name: '📺 Streams',
-          value: '`!whoslive` - Who\'s live now\n' +
-            '`!liststreamer` - Monitored streamers',
-          inline: true
-        },
-        {
-          name: '📋 Profile',
-          value: '`!setprofile [platform] [link]`\n' +
-            '`!myprofile` - View your links\n' +
-            '`!clearprofile` - Reset links',
+          value: '`!whoslive` - See who\'s streaming\n' +
+            '`!liststreamer` - View monitored streamers',
           inline: true
         },
         {
@@ -31,7 +24,7 @@ module.exports = {
         },
         {
           name: '📢 Your Ads (2 max)',
-          value: '`!addad HH:MM https://...`\n' +
+          value: '`!addad HH:MM [URL]`\n' +
             '`!myads` - View your ads\n' +
             '`!removemyad 1|2`',
           inline: true
@@ -47,27 +40,13 @@ module.exports = {
         {
           name: '🎵 Music Queue',
           value: '`!addtrack [URL]` - Add track\n' +
-            '`!removetrack [#]` - Remove\n' +
-            '`!myqueue` - Your tracks\n' +
-            '`!queue` - Full queue',
-          inline: true
-        },
-        {
-          name: '🎵 Playback',
-          value: '`!play` - Start playing\n' +
-            '`!nowplaying` - Current track\n' +
-            '`!skip` - Vote to skip',
-          inline: true
-        },
-        {
-          name: '📺 Twitch Chat',
-          value: '`!lbsr [URL]` - Request song\n' +
-            '`!lbqueue` - View queue\n' +
-            '`!lbnp` - Now playing',
+            '`!play` - Start playing\n' +
+            '`!myqueue` • `!queue`\n' +
+            '`!nowplaying` • `!skip`',
           inline: true
         }
       )
-      .setFooter({ text: 'LIVE BEACON by COAST • Mods: !modhelp' })
+      .setFooter({ text: 'LIVE BEACON by COAST • Mods: !modhelp • Admins: !adminhelp' })
       .setTimestamp();
 
     return message.reply({ embeds: [embed] });
