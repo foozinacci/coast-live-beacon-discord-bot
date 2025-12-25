@@ -1068,22 +1068,44 @@
             return shuffled;
         }
 
-        // Track class assignments per team for balanced composition
-        let teamClassPools = {};
+        // CLASS DISTRIBUTION RULES:
+        // 1. No class appears twice on same team (3 unique per team)
+        // 2. No class appears more than 3 times across all 5 teams
+
+        // Track class assignments
+        let teamClassPools = {};       // Per-team: array of assigned classes
+        let globalClassCounts = {};    // Global: class -> count
+        const MAX_PER_CLASS = 3;
+
+        // Initialize global counts
+        classKeys.forEach(c => globalClassCounts[c] = 0);
 
         function addPlayer(username, platform = 'Discord') {
             if (players.length >= MAX_PLAYERS) return null;
             if (players.find(p => p.username.toLowerCase() === username.toLowerCase())) return null;
             const team = Math.floor(players.length / 3) + 1;
 
-            // Initialize team's shuffled class pool if new team
+            // Initialize team's class pool if new team
             if (!teamClassPools[team]) {
-                teamClassPools[team] = shuffleArray(classKeys).slice(0, 3);
+                teamClassPools[team] = [];
             }
 
-            // Get next class from team's shuffled pool
-            const teamMemberIndex = players.filter(p => p.team === team).length;
-            const classKey = teamClassPools[team][teamMemberIndex] || classKeys[Math.floor(Math.random() * classKeys.length)];
+            // Get classes that are:
+            // 1. Not already on this team (no duplicates)
+            // 2. Not at global max (max 3 per class)
+            const usedOnTeam = teamClassPools[team];
+            const available = classKeys.filter(c =>
+                !usedOnTeam.includes(c) &&
+                globalClassCounts[c] < MAX_PER_CLASS
+            );
+
+            // Shuffle and pick first available
+            const shuffled = shuffleArray(available);
+            const classKey = shuffled[0] || classKeys[Math.floor(Math.random() * classKeys.length)];
+
+            // Update tracking
+            teamClassPools[team].push(classKey);
+            globalClassCounts[classKey]++;
 
             const config = CLASSES[classKey];
             const player = {

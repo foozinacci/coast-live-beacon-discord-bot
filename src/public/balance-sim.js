@@ -103,8 +103,7 @@ function createPlayers(teamCount) {
     // FIXED: Random spawn rotation to eliminate position advantage
     const randomRotation = Math.random() * Math.PI * 2;
 
-    // FIXED: Randomize class assignment per team
-    // Each team gets a random selection of 3 classes (can repeat)
+    // Shuffle helper
     const shuffleArray = (arr) => {
         const shuffled = [...arr];
         for (let i = shuffled.length - 1; i > 0; i--) {
@@ -114,17 +113,58 @@ function createPlayers(teamCount) {
         return shuffled;
     };
 
+    // CLASS DISTRIBUTION RULES:
+    // 1. No class appears twice on same team (3 unique per team)
+    // 2. No class appears more than 3 times across all teams
+
+    // For 5 teams (15 players): each class appears exactly 3 times
+    // For 4 teams (12 players): some classes appear 2x, some 3x
+    // For 3 teams (9 players): some classes appear 1x, some 2x
+
+    // Create global class pool (each class can be picked max 3 times)
+    const globalClassPool = {};
+    classKeys.forEach(c => globalClassPool[c] = 0);
+    const maxPerClass = 3;
+
+    // Generate team compositions ensuring unique per team
+    const teamCompositions = [];
+
+    for (let t = 0; t < teamCount; t++) {
+        // Get available classes (not at max) shuffled
+        const available = shuffleArray(classKeys.filter(c => globalClassPool[c] < maxPerClass));
+
+        // Pick 3 unique classes for this team (or fill with random if not enough)
+        const teamClasses = [];
+        const usedThisTeam = new Set();
+
+        for (let i = 0; i < PLAYERS_PER_TEAM; i++) {
+            // Try to get from available pool first
+            const pick = available.find(c => !usedThisTeam.has(c));
+            if (pick) {
+                teamClasses.push(pick);
+                usedThisTeam.add(pick);
+                globalClassPool[pick]++;
+            } else {
+                // Fallback: pick any class not already on this team
+                const fallback = shuffleArray(classKeys).find(c => !usedThisTeam.has(c)) || classKeys[0];
+                teamClasses.push(fallback);
+                usedThisTeam.add(fallback);
+            }
+        }
+
+        teamCompositions.push(teamClasses);
+    }
+
     for (let t = 0; t < teamCount; t++) {
         // Apply random rotation to spawn angle
         const angle = randomRotation + (t / teamCount) * Math.PI * 2;
         const baseX = Math.cos(angle) * 400;
         const baseY = Math.sin(angle) * 400;
 
-        // Each team gets a random class composition
-        const teamClasses = shuffleArray(classKeys).slice(0, PLAYERS_PER_TEAM);
+        const teamClasses = teamCompositions[t];
 
         for (let p = 0; p < PLAYERS_PER_TEAM; p++) {
-            const classKey = teamClasses[p];
+            const classKey = teamClasses[p] || classKeys[p % classKeys.length];
             const config = CLASSES[classKey];
             players.push({
                 id: players.length,
