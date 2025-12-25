@@ -44,7 +44,7 @@ const CLASSES = {
         hitbox: 1.05, range: 0.50, name: 'Controller', perks: ['suppress', 'anchor', 'parry'],
         baseAggression: 0.35, // Area dominance
         damageReduction: 0.15,
-        parryChance: 0.25,      // 25% chance to parry
+        parryChance: 0.75,      // 75% chance to parry
         parryReflect: 0.50      // Reflects 50% damage back
     },
     assault: {
