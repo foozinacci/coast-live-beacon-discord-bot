@@ -22,43 +22,49 @@ const COUNTERS = {
     skirmisher: { counters: ['support', 'assault'], counteredBy: ['controller', 'recon'] }
 };
 
-// === CLASS STATS (v2.0 BALANCED) ===
+// === CLASS STATS (ORIGINAL SPEC + FIRE RATES) ===
 const CLASSES = {
     support: {
-        // BUFFED: +3% evasion (5→8%) to survive being target #1
-        hp: 88, dmg: [35, 38], acc: 0.93, eva: 0.08, exec: 0.00, momentum: 10,
+        hp: 88, dmg: [35, 38], acc: 0.93, eva: 0.05, exec: 0.00, momentum: 10,
         hitbox: 1.00, range: 0.30, name: 'Support', perks: ['secondChance', 'teamAura'],
-        baseAggression: 0.5, // CHANGED: More cautious, avoids frontline
-        damageReduction: 0
+        baseAggression: 0.5,
+        damageReduction: 0,
+        fireRate: 1.2,
+        projectileSpeed: 500
     },
     recon: {
-        // NERFED: Accuracy 91→87%, Range 1.0→0.80
-        hp: 87, dmg: [35, 38], acc: 0.87, eva: 0.04, exec: 0.16, momentum: 5,
-        hitbox: 1.02, range: 0.80, name: 'Recon', perks: ['disrupt', 'precision'],
-        baseAggression: 0.65, // CHANGED: More flanking, less camping
-        damageReduction: 0
+        hp: 87, dmg: [45, 55], acc: 0.91, eva: 0.04, exec: 0.16, momentum: 5,
+        hitbox: 1.02, range: 1.00, name: 'Recon', perks: ['disrupt', 'precision'],
+        baseAggression: 0.65,
+        damageReduction: 0,
+        fireRate: 2.5,        // Slow fire (sniper)
+        projectileSpeed: 800  // Fast bullets
     },
     controller: {
-        // BUFFED: HP 67→85, Range 0.38→0.50, +15% DR, +parry
-        hp: 85, dmg: [35, 37], acc: 0.80, eva: 0.00, exec: 0.05, momentum: 0,
+        hp: 67, dmg: [30, 35], acc: 0.80, eva: 0.00, exec: 0.05, momentum: 0,
         hitbox: 1.05, range: 0.50, name: 'Controller', perks: ['suppress', 'anchor', 'parry'],
-        baseAggression: 0.35, // Area dominance
+        baseAggression: 0.35,
         damageReduction: 0.15,
-        parryChance: 0.75,      // 75% chance to parry
-        parryReflect: 0.50      // Reflects 50% damage back
+        parryChance: 0.75,
+        parryReflect: 0.50,
+        fireRate: 1.5,
+        projectileSpeed: 450
     },
     assault: {
-        hp: 89, dmg: [35, 40], acc: 0.95, eva: 0.08, exec: 0.22, momentum: 30,
+        hp: 89, dmg: [30, 38], acc: 0.95, eva: 0.08, exec: 0.22, momentum: 30,
         hitbox: 1.08, range: 0.50, name: 'Assault', perks: ['rampage', 'execution'],
         baseAggression: 0.95,
-        damageReduction: 0
+        damageReduction: 0,
+        fireRate: 0.8,        // Fast fire
+        projectileSpeed: 550
     },
     skirmisher: {
-        // BUFFED: Range 0.22→0.35, Damage floor raised (35→40, ceiling 50→48)
-        hp: 83, dmg: [40, 48], acc: 0.87, eva: 0.08, exec: 0.05, momentum: 40,
+        hp: 83, dmg: [20, 28], acc: 0.87, eva: 0.08, exec: 0.05, momentum: 40,
         hitbox: 1.03, range: 0.35, name: 'Skirmisher', perks: ['bleed', 'counter'],
-        baseAggression: 0.75, // CHANGED: More kiting, less blind chase
-        damageReduction: 0
+        baseAggression: 0.75,
+        damageReduction: 0,
+        fireRate: 0.5,        // Very fast fire
+        projectileSpeed: 600
     }
 };
 const classKeys = Object.keys(CLASSES);
