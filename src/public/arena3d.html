@@ -347,7 +347,7 @@
             skirmisher: { counters: ['support', 'assault'], counteredBy: ['controller', 'recon'] }
         };
 
-        // === CLASS STATS (v2.1 BALANCED) ===
+        // === CLASS STATS (v2.2 BALANCED - UNIQUE FIRE RATES) ===
         const CLASSES = {
             support: {
                 // BUFFED: eva 5→8%
@@ -357,21 +357,25 @@
                 teamBonus: { type: 'damageResist', value: 0.05 },
                 baseAggression: 0.5, // More cautious
                 role: 'backline',
-                damageReduction: 0
+                damageReduction: 0,
+                fireRate: 1.2,        // Moderate fire rate
+                projectileSpeed: 500  // Medium bullets
             },
             recon: {
-                // NERFED: acc 91→87%, range 1.0→0.80
-                hp: 87, dmg: [35, 38], acc: 0.87, eva: 0.04, exec: 0.16, momentum: 5,
-                hitbox: 1.02, range: 0.80, color: '#3498db', colorHex: 0x3498db, emoji: '🔵', name: 'Recon',
+                // SNIPER: Slow fire, hard hits, fast bullets, long range
+                hp: 87, dmg: [45, 55], acc: 0.85, eva: 0.04, exec: 0.16, momentum: 5,
+                hitbox: 1.02, range: 1.00, color: '#3498db', colorHex: 0x3498db, emoji: '🔵', name: 'Recon',
                 perks: ['disrupt', 'precision'],
                 teamBonus: { type: 'accuracy', value: 0.05 },
                 baseAggression: 0.65, // More flanking
                 role: 'flank',
-                damageReduction: 0
+                damageReduction: 0,
+                fireRate: 2.5,        // Slow fire (sniper)
+                projectileSpeed: 800  // Fast bullets (sniper rifle)
             },
             controller: {
                 // BUFFED: hp 67→85, range 0.38→0.50, +15% DR, +parry
-                hp: 85, dmg: [35, 37], acc: 0.80, eva: 0.00, exec: 0.05, momentum: 0,
+                hp: 85, dmg: [30, 35], acc: 0.80, eva: 0.00, exec: 0.05, momentum: 0,
                 hitbox: 1.05, range: 0.50, color: '#9b59b6', colorHex: 0x9b59b6, emoji: '🟣', name: 'Controller',
                 perks: ['suppress', 'anchor', 'parry'],
                 teamBonus: { type: 'cooldownReduction', value: 0.05 },
@@ -379,26 +383,32 @@
                 role: 'anchor',
                 damageReduction: 0.15,
                 parryChance: 0.75,      // 75% chance to parry
-                parryReflect: 0.50      // Reflects 50% damage back
+                parryReflect: 0.50,     // Reflects 50% damage back
+                fireRate: 1.5,          // Moderate fire rate
+                projectileSpeed: 450    // Slower bullets (area denial)
             },
             assault: {
-                hp: 89, dmg: [35, 40], acc: 0.95, eva: 0.08, exec: 0.22, momentum: 30,
+                hp: 89, dmg: [30, 38], acc: 0.95, eva: 0.08, exec: 0.22, momentum: 30,
                 hitbox: 1.08, range: 0.50, color: '#e74c3c', colorHex: 0xe74c3c, emoji: '🔴', name: 'Assault',
                 perks: ['rampage', 'execution'],
                 teamBonus: { type: 'damage', value: 0.05 },
                 baseAggression: 0.95,
                 role: 'frontline',
-                damageReduction: 0
+                damageReduction: 0,
+                fireRate: 0.8,          // Fast fire (assault rifle)
+                projectileSpeed: 550    // Medium-fast bullets
             },
             skirmisher: {
-                // BUFFED: range 0.22→0.35, dmg 40-48
-                hp: 83, dmg: [40, 48], acc: 0.87, eva: 0.08, exec: 0.05, momentum: 40,
+                // HARASSER: Very fast fire, close range, in-your-face
+                hp: 83, dmg: [20, 28], acc: 0.87, eva: 0.08, exec: 0.05, momentum: 40,
                 hitbox: 1.03, range: 0.35, color: '#2ecc71', colorHex: 0x2ecc71, emoji: '🟢', name: 'Skirmisher',
                 perks: ['bleed', 'counter'],
                 teamBonus: { type: 'momentum', value: 10 },
                 baseAggression: 0.75, // More kiting
                 role: 'roam',
-                damageReduction: 0
+                damageReduction: 0,
+                fireRate: 0.5,          // Very fast fire (SMG/pistol)
+                projectileSpeed: 600    // Fast bullets (close quarters)
             }
         };
         const classKeys = Object.keys(CLASSES);
@@ -977,12 +987,13 @@
                 p.cautiousMode = false;
 
                 // === SHOOTING LOGIC ===
+                const fireRate = p.config.fireRate || 1.0;
                 if (p.attackCooldown <= 0 && distToTarget < maxRange) {
                     // Accuracy check before shooting (pre-shot)
                     const shootChance = p.config.acc + (aggro * 0.1); // More aggressive = more likely to shoot
                     if (Math.random() < shootChance) {
                         createProjectile(p, target);
-                        p.attackCooldown = 0.35 + Math.random() * 0.25;
+                        p.attackCooldown = fireRate * (0.8 + Math.random() * 0.4); // Use class fire rate
 
                         // Precision trigger (Recon)
                         if (p.classKey === 'recon') p.precisionTimer = 2;
@@ -1036,10 +1047,11 @@
             const dx = target.x - attacker.x;
             const dy = target.y - attacker.y;
             const d = Math.sqrt(dx * dx + dy * dy) || 1;
+            const speed = attacker.config.projectileSpeed || 500; // Use class-specific bullet speed
             const proj = {
                 x: attacker.x, y: attacker.y,
                 startX: attacker.x, startY: attacker.y,
-                vx: (dx / d) * 500, vy: (dy / d) * 500,
+                vx: (dx / d) * speed, vy: (dy / d) * speed,
                 attacker, target, alive: true
             };
             projectiles.push(proj);
