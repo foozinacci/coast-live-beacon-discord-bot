@@ -39,11 +39,13 @@ const CLASSES = {
         damageReduction: 0
     },
     controller: {
-        // BUFFED: HP 67→85, Range 0.38→0.50, +15% damage reduction
+        // BUFFED: HP 67→85, Range 0.38→0.50, +15% DR, +parry
         hp: 85, dmg: [35, 37], acc: 0.80, eva: 0.00, exec: 0.05, momentum: 0,
-        hitbox: 1.05, range: 0.50, name: 'Controller', perks: ['suppress', 'anchor'],
-        baseAggression: 0.35, // CHANGED: Area dominance over seek-kill
-        damageReduction: 0.15 // NEW: 15% damage reduction (teamwide durability role)
+        hitbox: 1.05, range: 0.50, name: 'Controller', perks: ['suppress', 'anchor', 'parry'],
+        baseAggression: 0.35, // Area dominance
+        damageReduction: 0.15,
+        parryChance: 0.25,      // 25% chance to parry
+        parryReflect: 0.50      // Reflects 50% damage back
     },
     assault: {
         hp: 89, dmg: [35, 40], acc: 0.95, eva: 0.08, exec: 0.22, momentum: 30,
@@ -311,6 +313,26 @@ function simulateTick(players, projectiles) {
                         p.precisionTimer = 2;
                     }
 
+                    // Controller Parry - reflects damage back
+                    if (target.classKey === 'controller' && (target.parryCooldown || 0) <= 0) {
+                        const parryChance = target.config.parryChance || 0.25;
+                        if (Math.random() < parryChance) {
+                            const reflectDmg = dmg * (target.config.parryReflect || 0.50);
+                            p.hp -= reflectDmg;
+                            p.damageTaken += reflectDmg;
+                            target.damageDealt += reflectDmg;
+                            target.parryCooldown = 3;
+                            stats.parryProcs = (stats.parryProcs || 0) + 1;
+                            dmg *= 0.25; // Only take 25% damage on parry
+
+                            // Check if attacker dies from reflect
+                            if (p.hp <= 0) {
+                                p.alive = false;
+                                target.kills++;
+                            }
+                        }
+                    }
+
                     // Apply damage reduction (Controller has 15%)
                     dmg *= (1 - (target.config.damageReduction || 0));
 
@@ -381,6 +403,7 @@ function simulateTick(players, projectiles) {
         if (p.precisionTimer > 0) p.precisionTimer -= dt;
         if (p.stunnedTimer > 0) p.stunnedTimer -= dt;
         if (p.suppressedTimer > 0) p.suppressedTimer -= dt;
+        if (p.parryCooldown > 0) p.parryCooldown -= dt;
     });
 }
 
@@ -502,6 +525,7 @@ console.log(`──────────────────────�
 console.log(`  Second Chance: ${stats.secondChanceProcs} (${(stats.secondChanceProcs / SIM_COUNT).toFixed(2)}/game)`);
 console.log(`  Execution:     ${stats.executionProcs} (${(stats.executionProcs / SIM_COUNT).toFixed(2)}/game)`);
 console.log(`  Disrupt Stun:  ${stats.disruptStuns} (${(stats.disruptStuns / SIM_COUNT).toFixed(2)}/game)`);
+console.log(`  Parry:         ${stats.parryProcs || 0} (${((stats.parryProcs || 0) / SIM_COUNT).toFixed(2)}/game)`);
 console.log(`  Counter Bonus: ${Math.round(stats.counterBonusDmg)} total dmg`);
 
 console.log(`\n🔄 COUNTER MATCHUP VALIDATION`);

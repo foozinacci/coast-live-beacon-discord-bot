@@ -370,14 +370,16 @@
                 damageReduction: 0
             },
             controller: {
-                // BUFFED: hp 67→85, range 0.38→0.50, +15% DR
+                // BUFFED: hp 67→85, range 0.38→0.50, +15% DR, +parry
                 hp: 85, dmg: [35, 37], acc: 0.80, eva: 0.00, exec: 0.05, momentum: 0,
                 hitbox: 1.05, range: 0.50, color: '#9b59b6', colorHex: 0x9b59b6, emoji: '🟣', name: 'Controller',
-                perks: ['suppress', 'anchor'],
+                perks: ['suppress', 'anchor', 'parry'],
                 teamBonus: { type: 'cooldownReduction', value: 0.05 },
                 baseAggression: 0.35, // Area dominance
                 role: 'anchor',
-                damageReduction: 0.15
+                damageReduction: 0.15,
+                parryChance: 0.25,      // 25% chance to parry when facing attacker
+                parryReflect: 0.50      // Reflects 50% damage back
             },
             assault: {
                 hp: 89, dmg: [35, 40], acc: 0.95, eva: 0.08, exec: 0.22, momentum: 30,
@@ -652,6 +654,30 @@
                 } else {
                     this.shell.material.color.setHex(p.config.colorHex);
                     this.bleedDropTimer = 0;
+                }
+
+                // Controller Parry visual - golden lattice when ready
+                if (p.classKey === 'controller') {
+                    if (p.parryCooldown <= 0) {
+                        // Parry ready - golden lattice grid at base
+                        const latticeSize = this.sizes.shell * 1.3;
+                        const lattice = new THREE.Mesh(
+                            new THREE.RingGeometry(latticeSize - 3, latticeSize, 6), // Hexagonal
+                            new THREE.MeshBasicMaterial({ color: 0xffd700, transparent: true, opacity: 0.4 + Math.sin(Date.now() * 0.005) * 0.2, side: THREE.DoubleSide })
+                        );
+                        lattice.rotation.x = -Math.PI / 2;
+                        lattice.position.y = -this.sizes.shell * 0.8;
+                        this.statusGroup.add(lattice);
+                    } else {
+                        // Parry on cooldown - dim purple ring
+                        const cdRing = new THREE.Mesh(
+                            new THREE.RingGeometry(this.sizes.shell * 1.1, this.sizes.shell * 1.2, 16),
+                            new THREE.MeshBasicMaterial({ color: 0x6a0dad, transparent: true, opacity: 0.3, side: THREE.DoubleSide })
+                        );
+                        cdRing.rotation.x = -Math.PI / 2;
+                        cdRing.position.y = -this.sizes.shell * 0.8;
+                        this.statusGroup.add(cdRing);
+                    }
                 }
             }
             destroy() { scene.remove(this.group); scene.remove(this.trail); }
@@ -978,6 +1004,8 @@
                 if (p.disruptedTimer > 0) p.disruptedTimer -= dt;
                 if (p.stunnedTimer > 0) p.stunnedTimer -= dt;
                 if (p.suppressedTimer > 0) p.suppressedTimer -= dt;
+                if (p.parryTimer > 0) p.parryTimer -= dt;
+                if (p.parryCooldown > 0) p.parryCooldown -= dt;
             });
         }
 
@@ -1044,6 +1072,28 @@
                         // Team bonuses
                         dmg *= 1 + (p.attacker.teamDamageBonus || 0);
                         dmg *= 1 - (target.teamDamageResist || 0);
+
+                        // Controller Parry - reflects damage back
+                        let parried = false;
+                        if (target.classKey === 'controller' && target.parryCooldown <= 0) {
+                            const parryChance = target.config.parryChance || 0.25;
+                            if (Math.random() < parryChance) {
+                                parried = true;
+                                const reflectDmg = dmg * (target.config.parryReflect || 0.50);
+                                p.attacker.hp -= reflectDmg;
+                                target.parryCooldown = 3; // 3 second cooldown
+                                addLog(`🛡️ ${target.username} PARRIED ${p.attacker.username}! (${Math.round(reflectDmg)} reflected)`, 'heal');
+                                dmg *= 0.25; // Only take 25% damage on parry
+
+                                // Check if attacker dies from reflect
+                                if (p.attacker.hp <= 0) {
+                                    p.attacker.alive = false;
+                                    addLog(`💀 ${target.username} killed ${p.attacker.username} with parry!`, 'kill');
+                                    updateTeamScores();
+                                    checkRoundState();
+                                }
+                            }
+                        }
 
                         // Class damage reduction (Controller has 15%)
                         dmg *= 1 - (target.config.damageReduction || 0);
@@ -1168,6 +1218,7 @@
                 alive: true, radius: 25 * config.hitbox, spawnProtection: 4, attackCooldown: 0,
                 hasSecondChance: config.perks.includes('secondChance'),
                 bleedTimer: 0, precisionTimer: 0, disruptedTimer: 0, stunnedTimer: 0, suppressedTimer: 0,
+                parryTimer: 0, parryCooldown: 0,  // Controller parry system
                 cautiousMode: false, currentTarget: null, anchorPoint: null
             };
             players.push(player);
