@@ -1,7 +1,7 @@
 const UserProfileStorage = require('../utils/userProfileStorage');
 
 module.exports = {
-    name: 'clearprofile',
+    name: 'lbclearprofile',
     description: 'Clear all your social links',
     async execute(message, args) {
         const storage = new UserProfileStorage();

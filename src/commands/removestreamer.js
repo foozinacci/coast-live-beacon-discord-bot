@@ -2,7 +2,7 @@ const StreamerStorage = require('../utils/streamerStorage');
 const BackupManager = require('../utils/backupManager');
 
 module.exports = {
-  name: 'removestreamer',
+  name: 'lbremovestreamer',
   description: 'Remove a Twitch streamer from monitoring',
   async execute(message, args) {
     const isModerator = message.member.permissions.has('ManageMessages') ||

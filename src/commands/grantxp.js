@@ -1,7 +1,7 @@
 const XPStorage = require('../utils/xpStorage');
 
 module.exports = {
-    name: 'grantxp',
+    name: 'lbgrantxp',
     description: 'Grant XP to a user (Mod only)',
     async execute(message, args) {
         const isMod = message.member.permissions.has('ManageMessages') ||

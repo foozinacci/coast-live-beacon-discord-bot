@@ -1,7 +1,7 @@
 const QueueStorage = require('../utils/queueStorage');
 
 module.exports = {
-    name: 'unblacklist',
+    name: 'lbunblacklist',
     description: 'Remove from blacklist (Mod only)',
     async execute(message, args) {
         const isMod = message.member.permissions.has('ManageMessages') ||

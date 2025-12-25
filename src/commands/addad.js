@@ -2,7 +2,7 @@ const { EmbedBuilder } = require('discord.js');
 const AnnouncementStorage = require('../utils/announcementStorage');
 
 module.exports = {
-    name: 'addad',
+    name: 'lbad',
     description: 'Add a scheduled promotional ad (max 2 per user)',
     async execute(message, args) {
         const storage = new AnnouncementStorage();

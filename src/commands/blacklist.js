@@ -1,7 +1,7 @@
 const QueueStorage = require('../utils/queueStorage');
 
 module.exports = {
-    name: 'blacklist',
+    name: 'lbblacklist',
     description: 'Blacklist a URL or domain (Mod only)',
     async execute(message, args) {
         const isMod = message.member.permissions.has('ManageMessages') ||

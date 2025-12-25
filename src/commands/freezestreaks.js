@@ -1,7 +1,7 @@
 const StreakStorage = require('../utils/streakStorage');
 
 module.exports = {
-    name: 'freezestreaks',
+    name: 'lbfreezestreaks',
     description: 'Freeze all streaks server-wide (Mod only)',
     async execute(message, args) {
         const isMod = message.member.permissions.has('ManageMessages') ||

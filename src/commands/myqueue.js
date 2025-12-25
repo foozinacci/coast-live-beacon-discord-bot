@@ -2,7 +2,7 @@ const { EmbedBuilder } = require('discord.js');
 const QueueStorage = require('../utils/queueStorage');
 
 module.exports = {
-    name: 'myqueue',
+    name: 'lbmyqueue',
     description: 'View your tracks in the queue',
     async execute(message, args) {
         const queueStorage = new QueueStorage();

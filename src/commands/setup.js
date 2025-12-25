@@ -2,7 +2,7 @@ const { EmbedBuilder } = require('discord.js');
 const StreamerStorage = require('../utils/streamerStorage');
 
 module.exports = {
-    name: 'setup',
+    name: 'lbsetup',
     description: 'Server setup wizard (Owner only)',
     async execute(message, args) {
         // Owner only

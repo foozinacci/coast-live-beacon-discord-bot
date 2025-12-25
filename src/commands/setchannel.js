@@ -3,7 +3,7 @@ const StreamerStorage = require('../utils/streamerStorage');
 const TwitchClient = require('../api/twitchClient');
 
 module.exports = {
-  name: 'setchannel',
+  name: 'lbsetchannel',
   description: 'Set the notification channel for stream alerts',
   async execute(message, args) {
     if (!message.member.permissions.has('Administrator')) {

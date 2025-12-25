@@ -1,5 +1,5 @@
 module.exports = {
-    name: 'musicstatus',
+    name: 'lbmusicstatus',
     description: 'View music system status (Admin only)',
     async execute(message, args) {
         if (!message.member.permissions.has('Administrator')) {

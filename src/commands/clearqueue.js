@@ -1,7 +1,7 @@
 const QueueStorage = require('../utils/queueStorage');
 
 module.exports = {
-    name: 'clearqueue',
+    name: 'lbclearqueue',
     description: 'Clear the entire music queue (Mod only)',
     async execute(message, args) {
         const isMod = message.member.permissions.has('ManageMessages') ||

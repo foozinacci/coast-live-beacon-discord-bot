@@ -2,7 +2,7 @@ const fs = require('fs');
 const path = require('path');
 
 module.exports = {
-    name: 'twitchstatus',
+    name: 'lbtwitchstatus',
     description: 'View Twitch chat link status',
     async execute(message, args) {
         if (!message.member.permissions.has('Administrator')) {

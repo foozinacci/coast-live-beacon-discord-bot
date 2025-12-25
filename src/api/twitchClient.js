@@ -101,6 +101,58 @@ class TwitchClient {
       return null;
     }
   }
+
+  /**
+   * Follow a channel using the bot's user token
+   * Requires TWITCH_BOT_TOKEN with user:edit:follows scope
+   */
+  async followChannel(targetUserId) {
+    try {
+      const botToken = process.env.TWITCH_BOT_TOKEN;
+      const botUsername = process.env.TWITCH_BOT_USERNAME;
+
+      if (!botToken || !botUsername) {
+        console.log('⚠️ No bot token configured for following');
+        return false;
+      }
+
+      // First get the bot's user ID
+      const botInfo = await this.getUserInfo(botUsername);
+      if (!botInfo) {
+        console.error('❌ Could not get bot user info');
+        return false;
+      }
+
+      // Use the user token (remove oauth: prefix if present)
+      const cleanToken = botToken.replace('oauth:', '');
+
+      const response = await axios.post(
+        'https://api.twitch.tv/helix/channels/followed',
+        {
+          user_id: botInfo.id,
+          broadcaster_id: targetUserId
+        },
+        {
+          headers: {
+            'Client-ID': this.clientId,
+            'Authorization': `Bearer ${cleanToken}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+
+      console.log(`✅ Bot now following user ID: ${targetUserId}`);
+      return true;
+    } catch (error) {
+      // 204 = success (no content), 409 = already following
+      if (error.response?.status === 204 || error.response?.status === 409) {
+        console.log(`✅ Bot is already following user ID: ${targetUserId}`);
+        return true;
+      }
+      console.error('❌ Failed to follow channel:', error.response?.data || error.message);
+      return false;
+    }
+  }
 }
 
 module.exports = TwitchClient;

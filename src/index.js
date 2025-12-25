@@ -51,6 +51,28 @@ client.once(Events.ClientReady, async (c) => {
   client.twitchChat = new TwitchChat(client);
   await client.twitchChat.loadSavedConfigs();
 
+  // Token expiry reminders
+  const TokenExpiryChecker = require('./services/tokenExpiryChecker');
+  const tokenChecker = new TokenExpiryChecker(client);
+  tokenChecker.start();
+
+  // Initialize Wildcard game and Spectator API
+  console.log('🃏 Initializing Wildcard game...');
+  const WildcardGame = require('./services/wildcardGameV2');
+  client.wildcardGame = new WildcardGame(client);
+
+  // Start API server after a delay (so bot finishes loading first)
+  setTimeout(() => {
+    try {
+      console.log('🌐 Starting Wildcard Spectator API...');
+      const WildcardAPI = require('./api/wildcardAPI');
+      client.wildcardAPI = new WildcardAPI(client.wildcardGame, 3005);
+      client.wildcardAPI.start();
+    } catch (err) {
+      console.error('❌ Failed to start Spectator API:', err.message);
+    }
+  }, 3000);
+
   console.log('⭐ XP and streak tracking active');
 });
 

@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WILDCARD - OBS Overlay</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@400;500;700&display=swap"
+        rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Rajdhani', sans-serif;
+            background: transparent;
+            color: #fff;
+            min-height: 100vh;
+            overflow: hidden;
+        }
+
+        .container {
+            padding: 20px;
+        }
+
+        /* Waiting screen */
+        .waiting {
+            text-align: center;
+            padding: 40px;
+            opacity: 0.8;
+        }
+
+        .waiting h2 {
+            font-family: 'Orbitron', monospace;
+            font-size: 1.5rem;
+            color: #ff6b00;
+            margin-bottom: 10px;
+        }
+
+        .waiting p {
+            color: #888;
+        }
+
+        .waiting .pulse {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            background: #ff6b00;
+            border-radius: 50%;
+            animation: pulse 1.5s infinite;
+            margin-left: 10px;
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+
+            50% {
+                opacity: 0.5;
+                transform: scale(0.8);
+            }
+        }
+
+        /* Game header */
+        .game-header {
+            text-align: center;
+            padding: 15px;
+            background: rgba(0, 0, 0, 0.7);
+            border-radius: 10px;
+            margin-bottom: 15px;
+            border: 2px solid rgba(255, 107, 0, 0.5);
+        }
+
+        .game-header h1 {
+            font-family: 'Orbitron', monospace;
+            font-size: 1.5rem;
+            background: linear-gradient(90deg, #ff6b00, #ff9500);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .round-badge {
+            display: inline-block;
+            background: linear-gradient(135deg, #ff6b00, #ff9500);
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-family: 'Orbitron', monospace;
+            font-weight: bold;
+            margin-top: 5px;
+        }
+
+        /* Teams grid */
+        .teams-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+
+        .team-card {
+            background: rgba(0, 0, 0, 0.75);
+            border-radius: 10px;
+            padding: 12px;
+            border: 2px solid rgba(255, 255, 255, 0.15);
+        }
+
+        .team-card.eliminated {
+            opacity: 0.4;
+            filter: grayscale(0.7);
+        }
+
+        .team-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            padding-bottom: 5px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .team-name {
+            font-family: 'Orbitron', monospace;
+            font-weight: 700;
+        }
+
+        .team-1 .team-name {
+            color: #ff6b6b;
+        }
+
+        .team-2 .team-name {
+            color: #4ecdc4;
+        }
+
+        .team-3 .team-name {
+            color: #ffe66d;
+        }
+
+        .team-4 .team-name {
+            color: #95e1d3;
+        }
+
+        .team-5 .team-name {
+            color: #dda0dd;
+        }
+
+        .team-hp {
+            font-family: 'Orbitron', monospace;
+            font-size: 0.9rem;
+            color: #00ff88;
+        }
+
+        .team-hp-bar {
+            height: 6px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+            margin-bottom: 10px;
+            overflow: hidden;
+        }
+
+        .team-hp-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #00ff88, #00cc66);
+            transition: width 0.5s;
+        }
+
+        .team-hp-fill.critical {
+            background: linear-gradient(90deg, #ff4444, #ff6666);
+        }
+
+        .team-hp-fill.warn {
+            background: linear-gradient(90deg, #ffaa00, #ffcc00);
+        }
+
+        /* Players */
+        .player {
+            display: flex;
+            align-items: center;
+            padding: 6px;
+            margin: 4px 0;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 5px;
+        }
+
+        .player.dead {
+            opacity: 0.4;
+        }
+
+        .player-class {
+            font-size: 1.3rem;
+            margin-right: 8px;
+        }
+
+        .player-info {
+            flex: 1;
+        }
+
+        .player-name {
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+
+        .player-hp-text {
+            font-family: 'Orbitron', monospace;
+            font-size: 0.8rem;
+            color: #00ff88;
+        }
+
+        .player.dead .player-hp-text {
+            color: #ff4444;
+        }
+
+        /* Perk alert */
+        .perk-alert {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            background: linear-gradient(135deg, #ffd700, #ff9500);
+            color: #000;
+            padding: 10px 20px;
+            border-radius: 25px;
+            font-family: 'Orbitron', monospace;
+            font-weight: bold;
+            animation: glow 1s infinite alternate;
+        }
+
+        @keyframes glow {
+            from {
+                box-shadow: 0 0 10px #ffd700;
+            }
+
+            to {
+                box-shadow: 0 0 25px #ffd700;
+            }
+        }
+
+        /* Winner */
+        .winner-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.85);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            animation: fadeIn 0.5s;
+        }
+
+        .winner-text {
+            font-family: 'Orbitron', monospace;
+            font-size: 3rem;
+            color: #ffd700;
+            text-shadow: 0 0 30px #ffd700;
+            animation: winPulse 1s infinite alternate;
+        }
+
+        @keyframes winPulse {
+            from {
+                transform: scale(1);
+            }
+
+            to {
+                transform: scale(1.05);
+            }
+        }
+
+        .winner-team {
+            font-size: 1.5rem;
+            color: #00ff88;
+            margin-top: 15px;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+
+            to {
+                opacity: 1;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container" id="app">
+        <!-- Waiting for game -->
+        <div class="waiting" id="waitingScreen">
+            <h2>🃏 WILDCARD</h2>
+            <p>Waiting for game... <span class="pulse"></span></p>
+        </div>
+
+        <!-- Game view -->
+        <div id="gameView" style="display: none;">
+            <div class="game-header">
+                <h1>🃏 WILDCARD</h1>
+                <div class="round-badge">ROUND <span id="roundNum">0</span></div>
+            </div>
+            <div class="teams-grid" id="teamsGrid"></div>
+        </div>
+
+        <!-- Perk alert -->
+        <div class="perk-alert" id="perkAlert" style="display: none;">
+            🃏 PERK SELECTION!
+        </div>
+
+        <!-- Winner -->
+        <div class="winner-overlay" id="winnerOverlay" style="display: none;">
+            <div class="winner-text">🏆 VICTORY! 🏆</div>
+            <div class="winner-team" id="winnerTeam">Team X Wins!</div>
+        </div>
+    </div>
+
+    <script>
+        // Get channel from URL: /obs/gsq_zeus
+        const channel = window.location.pathname.split('/obs/')[1];
+        let lastState = null;
+        let pollInterval = null;
+
+        async function checkForGame() {
+            try {
+                const response = await fetch(`/api/channel/${channel}`);
+                const data = await response.json();
+
+                if (data.hasActiveGame && data.code) {
+                    // Game found! Fetch full state
+                    fetchGameState(data.code);
+                    if (!pollInterval) {
+                        pollInterval = setInterval(() => fetchGameState(data.code), 1500);
+                    }
+                } else {
+                    // No active game
+                    showWaiting();
+                    if (pollInterval) {
+                        clearInterval(pollInterval);
+                        pollInterval = null;
+                    }
+                }
+            } catch (err) {
+                console.error('Channel check failed:', err);
+            }
+        }
+
+        async function fetchGameState(code) {
+            try {
+                const response = await fetch(`/api/game/${code}`);
+                if (!response.ok) {
+                    showWaiting();
+                    return;
+                }
+                const state = await response.json();
+                updateUI(state);
+                lastState = state;
+            } catch (err) {
+                console.error('Fetch error:', err);
+            }
+        }
+
+        function showWaiting() {
+            document.getElementById('waitingScreen').style.display = 'block';
+            document.getElementById('gameView').style.display = 'none';
+            document.getElementById('winnerOverlay').style.display = 'none';
+        }
+
+        function showGame() {
+            document.getElementById('waitingScreen').style.display = 'none';
+            document.getElementById('gameView').style.display = 'block';
+        }
+
+        function updateUI(state) {
+            showGame();
+            document.getElementById('roundNum').textContent = state.round;
+            document.getElementById('perkAlert').style.display = state.perkSelectionActive ? 'block' : 'none';
+
+            renderTeams(state.teams);
+
+            // Check for winner
+            if (state.state === 'finished' || state.state === 'idle') {
+                const aliveTeam = state.teams.find(t => t.alive);
+                if (aliveTeam && state.round > 0) {
+                    showWinner(aliveTeam);
+                }
+            } else {
+                document.getElementById('winnerOverlay').style.display = 'none';
+            }
+        }
+
+        function renderTeams(teams) {
+            const grid = document.getElementById('teamsGrid');
+            grid.innerHTML = '';
+
+            teams.forEach(team => {
+                const totalMaxHp = team.players.reduce((sum, p) => sum + p.maxHp, 0);
+                const totalCurrentHp = team.players.reduce((sum, p) => sum + Math.max(0, p.hp), 0);
+                const hpPercent = totalMaxHp > 0 ? (totalCurrentHp / totalMaxHp) * 100 : 0;
+
+                let hpClass = '';
+                if (hpPercent < 25) hpClass = 'critical';
+                else if (hpPercent < 50) hpClass = 'warn';
+
+                const html = `
+                    <div class="team-card team-${team.id} ${team.alive ? '' : 'eliminated'}">
+                        <div class="team-header">
+                            <span class="team-name">TEAM ${team.id}</span>
+                            <span class="team-hp">${Math.round(totalCurrentHp)} HP</span>
+                        </div>
+                        <div class="team-hp-bar">
+                            <div class="team-hp-fill ${hpClass}" style="width: ${hpPercent}%"></div>
+                        </div>
+                        ${team.players.map(p => `
+                            <div class="player ${p.alive ? '' : 'dead'}">
+                                <span class="player-class">${p.classEmoji}</span>
+                                <div class="player-info">
+                                    <div class="player-name">${p.username}</div>
+                                </div>
+                                <span class="player-hp-text">${p.alive ? Math.round(p.hp) : '💀'}</span>
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+                grid.innerHTML += html;
+            });
+        }
+
+        function showWinner(team) {
+            document.getElementById('winnerOverlay').style.display = 'flex';
+            document.getElementById('winnerTeam').textContent = `Team ${team.id} Wins!`;
+        }
+
+        // Preview mode: add ?preview=1 to URL to see mock data
+        const urlParams = new URLSearchParams(window.location.search);
+        const previewMode = urlParams.get('preview') === '1';
+
+        if (previewMode) {
+            // Mock game data for preview
+            const mockState = {
+                round: 3,
+                perkSelectionActive: false,
+                state: 'in_progress',
+                teams: [
+                    {
+                        id: 1, alive: true,
+                        players: [
+                            { username: 'gsq_zeus', classEmoji: '⚪', className: 'Support', hp: 72, maxHp: 88, alive: true },
+                            { username: 'foozinacci', classEmoji: '🔴', className: 'Assault', hp: 45, maxHp: 89, alive: true },
+                            { username: 'yokalper', classEmoji: '🟣', className: 'Controller', hp: 0, maxHp: 67, alive: false }
+                        ]
+                    },
+                    {
+                        id: 2, alive: true,
+                        players: [
+                            { username: 'evilsrealm', classEmoji: '🔵', className: 'Recon', hp: 62, maxHp: 87, alive: true },
+                            { username: 'hamhocks42', classEmoji: '🟢', className: 'Skirmisher', hp: 38, maxHp: 83, alive: true },
+                            { username: 'darkest_mage', classEmoji: '⚪', className: 'Support', hp: 0, maxHp: 88, alive: false }
+                        ]
+                    },
+                    {
+                        id: 3, alive: true,
+                        players: [
+                            { username: 'ashlizzlle', classEmoji: '🔴', className: 'Assault', hp: 25, maxHp: 89, alive: true },
+                            { username: 'grixisleader', classEmoji: '🔵', className: 'Recon', hp: 67, maxHp: 87, alive: true },
+                            { username: 'maldhound', classEmoji: '🟢', className: 'Skirmisher', hp: 55, maxHp: 83, alive: true }
+                        ]
+                    }
+                ]
+            };
+
+            // Show game view with mock data
+            showGame();
+            updateUI(mockState);
+
+            // Simulate perk selection every 5 seconds
+            let perkToggle = false;
+            setInterval(() => {
+                perkToggle = !perkToggle;
+                document.getElementById('perkAlert').style.display = perkToggle ? 'block' : 'none';
+            }, 5000);
+
+            // Animate HP changes for demo
+            setInterval(() => {
+                mockState.round++;
+                mockState.teams.forEach(team => {
+                    team.players.forEach(p => {
+                        if (p.alive && p.hp > 0) {
+                            p.hp = Math.max(0, p.hp - Math.floor(Math.random() * 15));
+                            if (p.hp === 0) p.alive = false;
+                        }
+                    });
+                    team.alive = team.players.some(p => p.alive);
+                });
+
+                // Check for winner
+                const aliveTeams = mockState.teams.filter(t => t.alive);
+                if (aliveTeams.length === 1) {
+                    mockState.state = 'finished';
+                }
+
+                updateUI(mockState);
+            }, 3000);
+
+        } else {
+            // Normal mode: Start polling for game
+            if (channel) {
+                checkForGame();
+                setInterval(checkForGame, 3000);
+            }
+        }
+    </script>
+</body>
+
+</html>

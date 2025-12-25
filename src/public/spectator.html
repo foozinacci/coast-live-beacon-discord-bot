@@ -1,0 +1,637 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WILDCARD - Spectator Mode</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Rajdhani', sans-serif;
+            background: linear-gradient(135deg, #0a0a1a 0%, #1a1a2e 50%, #16213e 100%);
+            color: #fff;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        /* Header */
+        .header {
+            text-align: center;
+            padding: 30px 0;
+            border-bottom: 2px solid rgba(255, 107, 0, 0.3);
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-family: 'Orbitron', monospace;
+            font-size: 3rem;
+            font-weight: 900;
+            background: linear-gradient(90deg, #ff6b00, #ff9500, #ffcc00);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 30px rgba(255, 107, 0, 0.5);
+            letter-spacing: 4px;
+        }
+
+        .game-code {
+            font-family: 'Orbitron', monospace;
+            font-size: 1.5rem;
+            color: #00ffcc;
+            margin-top: 10px;
+            letter-spacing: 3px;
+        }
+
+        .round-info {
+            font-size: 1.2rem;
+            color: #888;
+            margin-top: 5px;
+        }
+
+        .round-info .round-num {
+            color: #ff6b00;
+            font-weight: 700;
+        }
+
+        /* Code Entry */
+        .code-entry {
+            text-align: center;
+            padding: 100px 20px;
+        }
+
+        .code-entry h2 {
+            font-family: 'Orbitron', monospace;
+            font-size: 2rem;
+            margin-bottom: 30px;
+            color: #ff6b00;
+        }
+
+        .code-input {
+            font-family: 'Orbitron', monospace;
+            font-size: 1.5rem;
+            padding: 15px 30px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid #ff6b00;
+            border-radius: 10px;
+            color: #fff;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            outline: none;
+            transition: all 0.3s;
+        }
+
+        .code-input:focus {
+            box-shadow: 0 0 20px rgba(255, 107, 0, 0.5);
+        }
+
+        .connect-btn {
+            font-family: 'Orbitron', monospace;
+            font-size: 1.2rem;
+            padding: 15px 40px;
+            background: linear-gradient(135deg, #ff6b00, #ff9500);
+            border: none;
+            border-radius: 10px;
+            color: #fff;
+            cursor: pointer;
+            margin-left: 15px;
+            transition: all 0.3s;
+        }
+
+        .connect-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 30px rgba(255, 107, 0, 0.5);
+        }
+
+        .error-msg {
+            color: #ff4444;
+            margin-top: 20px;
+            font-size: 1.1rem;
+        }
+
+        /* Arena */
+        .arena {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 25px;
+            margin-top: 30px;
+        }
+
+        .team-card {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 15px;
+            padding: 20px;
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .team-card.eliminated {
+            opacity: 0.4;
+            filter: grayscale(0.8);
+        }
+
+        .team-card.eliminated::after {
+            content: '☠️ ELIMINATED';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) rotate(-15deg);
+            font-family: 'Orbitron', monospace;
+            font-size: 1.5rem;
+            color: #ff4444;
+            text-shadow: 0 0 20px #ff4444;
+            z-index: 10;
+        }
+
+        .team-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .team-name {
+            font-family: 'Orbitron', monospace;
+            font-size: 1.3rem;
+            font-weight: 700;
+        }
+
+        .team-1 .team-name { color: #ff6b6b; }
+        .team-2 .team-name { color: #4ecdc4; }
+        .team-3 .team-name { color: #ffe66d; }
+        .team-4 .team-name { color: #95e1d3; }
+        .team-5 .team-name { color: #dda0dd; }
+
+        .team-hp {
+            font-size: 1rem;
+            color: #888;
+        }
+
+        .team-hp-bar {
+            height: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+            margin-bottom: 15px;
+            overflow: hidden;
+        }
+
+        .team-hp-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #00ff88, #00cc66);
+            border-radius: 4px;
+            transition: width 0.5s ease;
+        }
+
+        .team-hp-fill.critical {
+            background: linear-gradient(90deg, #ff4444, #ff6666);
+        }
+
+        .team-hp-fill.warn {
+            background: linear-gradient(90deg, #ffaa00, #ffcc00);
+        }
+
+        /* Players */
+        .player {
+            display: flex;
+            align-items: center;
+            padding: 10px;
+            margin: 8px 0;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            transition: all 0.3s;
+        }
+
+        .player.dead {
+            opacity: 0.4;
+            filter: grayscale(0.7);
+        }
+
+        .player-class {
+            font-size: 1.8rem;
+            margin-right: 12px;
+        }
+
+        .player-info {
+            flex: 1;
+        }
+
+        .player-name {
+            font-weight: 600;
+            font-size: 1rem;
+        }
+
+        .player-class-name {
+            font-size: 0.8rem;
+            color: #888;
+        }
+
+        .player-hp-bar {
+            width: 100px;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        .player-hp-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #00ff88, #00cc66);
+            transition: width 0.3s ease;
+        }
+
+        .player-hp-fill.critical {
+            background: linear-gradient(90deg, #ff4444, #ff6666);
+        }
+
+        .player-stats {
+            text-align: right;
+            min-width: 80px;
+        }
+
+        .player-hp-text {
+            font-family: 'Orbitron', monospace;
+            font-size: 0.9rem;
+            color: #00ff88;
+        }
+
+        .player.dead .player-hp-text {
+            color: #ff4444;
+        }
+
+        .player-kills {
+            font-size: 0.75rem;
+            color: #888;
+        }
+
+        /* Status Bar */
+        .status-bar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(10, 10, 26, 0.95);
+            border-top: 2px solid rgba(255, 107, 0, 0.3);
+            padding: 15px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .status-left {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .status-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #00ff88;
+            animation: pulse 1.5s infinite;
+        }
+
+        .status-dot.disconnected {
+            background: #ff4444;
+            animation: none;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .perk-alert {
+            background: linear-gradient(135deg, #ffd700, #ff9500);
+            color: #000;
+            padding: 8px 20px;
+            border-radius: 20px;
+            font-weight: 700;
+            animation: glow 1s infinite alternate;
+        }
+
+        @keyframes glow {
+            from { box-shadow: 0 0 10px #ffd700; }
+            to { box-shadow: 0 0 30px #ffd700; }
+        }
+
+        /* Combat Log */
+        .combat-log {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 10px;
+            padding: 15px;
+            margin-top: 30px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .combat-log h3 {
+            font-family: 'Orbitron', monospace;
+            color: #ff6b00;
+            margin-bottom: 10px;
+        }
+
+        .log-entry {
+            padding: 5px 0;
+            font-size: 0.9rem;
+            color: #aaa;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        /* Waiting State */
+        .waiting {
+            text-align: center;
+            padding: 50px;
+        }
+
+        .waiting h2 {
+            font-family: 'Orbitron', monospace;
+            color: #888;
+            margin-bottom: 20px;
+        }
+
+        .waiting .spinner {
+            width: 60px;
+            height: 60px;
+            border: 4px solid rgba(255, 107, 0, 0.3);
+            border-top: 4px solid #ff6b00;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Winner Celebration */
+        .winner-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.9);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            animation: fadeIn 0.5s;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .winner-text {
+            font-family: 'Orbitron', monospace;
+            font-size: 4rem;
+            color: #ffd700;
+            text-shadow: 0 0 50px #ffd700;
+            animation: winPulse 1s infinite alternate;
+        }
+
+        @keyframes winPulse {
+            from { transform: scale(1); }
+            to { transform: scale(1.1); }
+        }
+
+        .winner-team {
+            font-size: 2rem;
+            color: #00ff88;
+            margin-top: 20px;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .header h1 { font-size: 2rem; }
+            .arena { grid-template-columns: 1fr; }
+            .status-bar { flex-direction: column; gap: 10px; padding: 10px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container" id="app">
+        <!-- Code Entry Screen -->
+        <div class="code-entry" id="codeEntry">
+            <h2>🃏 WILDCARD SPECTATOR</h2>
+            <p style="color: #888; margin-bottom: 30px;">Enter the game code to watch live</p>
+            <input type="text" class="code-input" id="codeInput" placeholder="WC-XXXXXX" maxlength="9">
+            <button class="connect-btn" onclick="connectToGame()">CONNECT</button>
+            <p class="error-msg" id="errorMsg"></p>
+        </div>
+
+        <!-- Game View -->
+        <div id="gameView" style="display: none;">
+            <div class="header">
+                <h1>🃏 WILDCARD</h1>
+                <div class="game-code" id="displayCode">WC-XXXXXX</div>
+                <div class="round-info">ROUND <span class="round-num" id="roundNum">0</span></div>
+            </div>
+
+            <div class="arena" id="arena">
+                <!-- Teams will be rendered here -->
+            </div>
+
+            <div class="combat-log" id="combatLog">
+                <h3>💥 COMBAT LOG</h3>
+                <div id="logEntries"></div>
+            </div>
+        </div>
+
+        <!-- Winner Overlay -->
+        <div class="winner-overlay" id="winnerOverlay" style="display: none;">
+            <div class="winner-text">🏆 VICTORY! 🏆</div>
+            <div class="winner-team" id="winnerTeam">Team X Wins!</div>
+        </div>
+    </div>
+
+    <div class="status-bar" id="statusBar" style="display: none;">
+        <div class="status-left">
+            <div class="status-dot" id="statusDot"></div>
+            <span id="statusText">Connected</span>
+        </div>
+        <div class="perk-alert" id="perkAlert" style="display: none;">
+            🃏 PERK SELECTION ACTIVE!
+        </div>
+        <div id="playerCount">0 Players</div>
+    </div>
+
+    <script>
+        let currentCode = null;
+        let pollInterval = null;
+        let lastState = null;
+
+        // Check URL for code
+        const urlPath = window.location.pathname;
+        const urlCode = urlPath.split('/spectate/')[1];
+        if (urlCode) {
+            document.getElementById('codeInput').value = urlCode;
+            connectToGame();
+        }
+
+        function connectToGame() {
+            const code = document.getElementById('codeInput').value.toUpperCase().trim();
+            if (!code || code.length < 9) {
+                document.getElementById('errorMsg').textContent = 'Please enter a valid game code';
+                return;
+            }
+
+            currentCode = code;
+            fetchGameState();
+        }
+
+        async function fetchGameState() {
+            try {
+                const response = await fetch(`/api/game/${currentCode}`);
+                
+                if (!response.ok) {
+                    if (response.status === 404) {
+                        document.getElementById('errorMsg').textContent = 'Game not found or expired';
+                        stopPolling();
+                        return;
+                    }
+                    throw new Error('Network error');
+                }
+
+                const state = await response.json();
+                
+                // First successful connection
+                if (!pollInterval) {
+                    showGameView();
+                    startPolling();
+                }
+
+                updateUI(state);
+                lastState = state;
+
+            } catch (error) {
+                console.error('Fetch error:', error);
+                document.getElementById('statusDot').classList.add('disconnected');
+                document.getElementById('statusText').textContent = 'Reconnecting...';
+            }
+        }
+
+        function showGameView() {
+            document.getElementById('codeEntry').style.display = 'none';
+            document.getElementById('gameView').style.display = 'block';
+            document.getElementById('statusBar').style.display = 'flex';
+            document.getElementById('displayCode').textContent = currentCode;
+        }
+
+        function startPolling() {
+            pollInterval = setInterval(fetchGameState, 1500);
+        }
+
+        function stopPolling() {
+            if (pollInterval) {
+                clearInterval(pollInterval);
+                pollInterval = null;
+            }
+        }
+
+        function updateUI(state) {
+            document.getElementById('statusDot').classList.remove('disconnected');
+            document.getElementById('statusText').textContent = 'Live';
+            document.getElementById('roundNum').textContent = state.round;
+            document.getElementById('playerCount').textContent = `${state.totalPlayers} Players`;
+
+            // Perk alert
+            const perkAlert = document.getElementById('perkAlert');
+            perkAlert.style.display = state.perkSelectionActive ? 'block' : 'none';
+
+            // Render teams
+            renderTeams(state.teams);
+
+            // Check for winner
+            if (state.state === 'finished' || state.state === 'idle') {
+                const aliveTeam = state.teams.find(t => t.alive);
+                if (aliveTeam && state.round > 0) {
+                    showWinner(aliveTeam);
+                }
+            } else {
+                document.getElementById('winnerOverlay').style.display = 'none';
+            }
+        }
+
+        function renderTeams(teams) {
+            const arena = document.getElementById('arena');
+            arena.innerHTML = '';
+
+            teams.forEach(team => {
+                const totalMaxHp = team.players.reduce((sum, p) => sum + p.maxHp, 0);
+                const totalCurrentHp = team.players.reduce((sum, p) => sum + Math.max(0, p.hp), 0);
+                const hpPercent = totalMaxHp > 0 ? (totalCurrentHp / totalMaxHp) * 100 : 0;
+
+                let hpClass = '';
+                if (hpPercent < 25) hpClass = 'critical';
+                else if (hpPercent < 50) hpClass = 'warn';
+
+                const teamHtml = `
+                    <div class="team-card team-${team.id} ${team.alive ? '' : 'eliminated'}">
+                        <div class="team-header">
+                            <div class="team-name">TEAM ${team.id}</div>
+                            <div class="team-hp">${Math.round(totalCurrentHp)} HP</div>
+                        </div>
+                        <div class="team-hp-bar">
+                            <div class="team-hp-fill ${hpClass}" style="width: ${hpPercent}%"></div>
+                        </div>
+                        <div class="players">
+                            ${team.players.map(p => renderPlayer(p)).join('')}
+                        </div>
+                    </div>
+                `;
+                arena.innerHTML += teamHtml;
+            });
+        }
+
+        function renderPlayer(player) {
+            const hpPercent = player.maxHp > 0 ? (Math.max(0, player.hp) / player.maxHp) * 100 : 0;
+            let hpClass = hpPercent < 30 ? 'critical' : '';
+
+            return `
+                <div class="player ${player.alive ? '' : 'dead'}">
+                    <div class="player-class">${player.classEmoji}</div>
+                    <div class="player-info">
+                        <div class="player-name">${player.username}</div>
+                        <div class="player-class-name">${player.className}</div>
+                    </div>
+                    <div class="player-hp-bar">
+                        <div class="player-hp-fill ${hpClass}" style="width: ${hpPercent}%"></div>
+                    </div>
+                    <div class="player-stats">
+                        <div class="player-hp-text">${player.alive ? Math.round(player.hp) : '💀'}</div>
+                        <div class="player-kills">🗡️ ${player.kills}</div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function showWinner(team) {
+            document.getElementById('winnerOverlay').style.display = 'flex';
+            document.getElementById('winnerTeam').textContent = `Team ${team.id} Wins!`;
+        }
+
+        // Enter key to connect
+        document.getElementById('codeInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') connectToGame();
+        });
+    </script>
+</body>
+</html>

@@ -1,7 +1,7 @@
 const AnnouncementStorage = require('../utils/announcementStorage');
 
 module.exports = {
-    name: 'addbirthday',
+    name: 'lbaddbday',
     description: 'Add a birthday to track for a user',
     async execute(message, args) {
         // Check moderator permissions

@@ -6,7 +6,7 @@ const fs = require('fs');
 const path = require('path');
 
 module.exports = {
-  name: 'config',
+  name: 'lbconfig',
   description: 'View server configuration (Admin only)',
   async execute(message, args) {
     if (!message.member.permissions.has('Administrator')) {

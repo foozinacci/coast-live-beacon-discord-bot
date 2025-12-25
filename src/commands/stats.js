@@ -3,8 +3,9 @@ const AnalyticsStorage = require('../utils/analyticsStorage');
 const ChartGenerator = require('../utils/chartGenerator');
 
 module.exports = {
-  name: 'stats',
+  name: 'lbstreamerstats',
   description: 'Show detailed analytics for a streamer (Moderator only)',
+  aliases: ['lbsstats'],
   async execute(message, args) {
     try {
       const isModerator = message.member.permissions.has('ManageMessages') ||

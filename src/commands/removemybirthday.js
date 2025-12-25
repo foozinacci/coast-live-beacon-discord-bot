@@ -1,7 +1,7 @@
 const AnnouncementStorage = require('../utils/announcementStorage');
 
 module.exports = {
-    name: 'removemybirthday',
+    name: 'lbremovebday',
     description: 'Remove your own birthday',
     async execute(message, args) {
         const storage = new AnnouncementStorage();

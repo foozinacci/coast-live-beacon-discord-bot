@@ -1,5 +1,5 @@
 module.exports = {
-    name: 'pausemusic',
+    name: 'lbpause',
     description: 'Pause music (Mod only)',
     async execute(message, args) {
         const isMod = message.member.permissions.has('ManageMessages') ||

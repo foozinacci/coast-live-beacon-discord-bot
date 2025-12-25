@@ -2,7 +2,7 @@ const { EmbedBuilder } = require('discord.js');
 const StreamerStorage = require('../utils/streamerStorage');
 
 module.exports = {
-  name: 'liststreamer',
+  name: 'lbstreamers',
   description: 'List all monitored Twitch streamers',
   async execute(message, args) {
     const storage = new StreamerStorage();

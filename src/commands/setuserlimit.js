@@ -1,5 +1,5 @@
 module.exports = {
-    name: 'setuserlimit',
+    name: 'lbsetuserlimit',
     description: 'Set track limit for a user (Mod only)',
     async execute(message, args) {
         const isMod = message.member.permissions.has('ManageMessages') ||

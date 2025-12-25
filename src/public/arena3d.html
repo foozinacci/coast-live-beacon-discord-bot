@@ -1,0 +1,1285 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WILDCARD ARENA 3D</title>
+    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;700&family=Orbitron:wght@700&display=swap"
+        rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #050508;
+            font-family: 'Rajdhani', sans-serif;
+            overflow: hidden;
+            color: #fff;
+        }
+
+        #container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+        }
+
+        canvas {
+            display: block;
+        }
+
+        #overlayHUD {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            pointer-events: none;
+            z-index: 100;
+            display: none;
+        }
+
+        #teamScores {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .team-score {
+            padding: 6px 14px;
+            border-radius: 4px;
+            font-weight: bold;
+            font-size: 0.85rem;
+            min-width: 100px;
+            text-align: center;
+            backdrop-filter: blur(8px);
+        }
+
+        #roundDisplay {
+            position: absolute;
+            top: 15px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.2rem;
+            background: rgba(0, 0, 0, 0.6);
+            padding: 8px 25px;
+            border-radius: 20px;
+        }
+
+        #lobbyUI {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: linear-gradient(135deg, #0a0a15 0%, #1a1a2e 50%, #0a0a15 100%);
+            z-index: 200;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding-top: 30px;
+        }
+
+        .game-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 4rem;
+            font-weight: 700;
+            background: linear-gradient(90deg, #ff6b35, #ff4757);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 10px;
+        }
+
+        .join-hint {
+            font-size: 1.2rem;
+            color: #888;
+            margin-bottom: 20px;
+        }
+
+        .join-hint span {
+            color: #ff6b35;
+            font-weight: bold;
+        }
+
+        .player-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 8px;
+            width: 90%;
+            max-width: 900px;
+            margin-bottom: 20px;
+        }
+
+        .player-slot {
+            background: rgba(20, 20, 35, 0.9);
+            border: 2px solid rgba(60, 60, 80, 0.5);
+            border-radius: 8px;
+            padding: 10px;
+            min-height: 80px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .player-slot.filled {
+            border-color: rgba(100, 200, 255, 0.4);
+        }
+
+        .player-slot .orb {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            margin-bottom: 5px;
+        }
+
+        .player-slot .name {
+            font-size: 0.85rem;
+            color: #fff;
+            font-weight: bold;
+        }
+
+        .team-badge {
+            font-size: 0.7rem;
+            padding: 2px 8px;
+            border-radius: 10px;
+            margin-top: 3px;
+        }
+
+        .team-1 {
+            border-color: #ffffff;
+        }
+
+        .team-1 .team-badge {
+            background: #ffffff;
+            color: #000;
+        }
+
+        .team-2 {
+            border-color: #3498db;
+        }
+
+        .team-2 .team-badge {
+            background: #3498db;
+        }
+
+        .team-3 {
+            border-color: #9b59b6;
+        }
+
+        .team-3 .team-badge {
+            background: #9b59b6;
+        }
+
+        .team-4 {
+            border-color: #e74c3c;
+        }
+
+        .team-4 .team-badge {
+            background: #e74c3c;
+        }
+
+        .team-5 {
+            border-color: #2ecc71;
+        }
+
+        .team-5 .team-badge {
+            background: #2ecc71;
+            color: #000;
+        }
+
+        .player-count {
+            font-size: 2rem;
+            color: #fff;
+            margin-bottom: 15px;
+        }
+
+        .player-count .current {
+            color: #4ecdc4;
+            font-weight: bold;
+        }
+
+        #countdown {
+            display: none;
+        }
+
+        .countdown-timer {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 4rem;
+            color: #ff6b35;
+        }
+
+        .waiting-msg {
+            font-size: 1.1rem;
+            color: #888;
+            margin-top: 10px;
+        }
+
+        #perkAlert {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(10, 10, 20, 0.95);
+            border: 2px solid #ff6b35;
+            border-radius: 20px;
+            padding: 30px 50px;
+            z-index: 300;
+            text-align: center;
+            display: none;
+            pointer-events: auto;
+        }
+
+        .perk-option {
+            display: inline-block;
+            background: rgba(40, 40, 60, 0.8);
+            border: 2px solid #555;
+            border-radius: 12px;
+            padding: 15px 25px;
+            margin: 10px;
+            cursor: pointer;
+        }
+
+        .perk-option:hover {
+            border-color: #ff6b35;
+            transform: scale(1.05);
+        }
+
+        .perk-name {
+            font-size: 1.3rem;
+            font-weight: bold;
+        }
+
+        .perk-desc {
+            font-size: 0.9rem;
+            color: #aaa;
+            margin-top: 5px;
+        }
+
+        #gameFeed {
+            position: absolute;
+            bottom: 15px;
+            left: 15px;
+            width: 320px;
+            max-height: 200px;
+            overflow: hidden;
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 8px;
+            padding: 10px;
+            font-size: 0.8rem;
+        }
+
+        .feed-entry {
+            padding: 3px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .feed-entry.kill {
+            color: #ff6b6b;
+        }
+
+        .feed-entry.hit {
+            color: #ffd93d;
+        }
+
+        .feed-entry.heal {
+            color: #2ecc71;
+        }
+    </style>
+    <script type="importmap">
+    { "imports": { "three": "https://unpkg.com/three@0.160.0/build/three.module.js", "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/" } }
+    </script>
+</head>
+
+<body>
+    <div id="container"></div>
+    <div id="overlayHUD">
+        <div id="teamScores"></div>
+        <div id="roundDisplay">ROUND <span id="roundNum">1</span></div>
+        <div id="gameFeed">
+            <div id="feedContent"></div>
+        </div>
+    </div>
+    <div id="lobbyUI">
+        <div class="game-title">WILDCARD</div>
+        <div class="join-hint">Type <span>!lbjoin</span> in chat to play</div>
+        <div class="player-grid" id="playerGrid"></div>
+        <div class="player-count"><span class="current" id="currentCount">0</span> / <span id="targetCount">9</span>
+        </div>
+        <div id="countdown">
+            <div class="countdown-timer" id="countdownTimer">30</div>
+        </div>
+        <div class="waiting-msg" id="waitingMsg">Waiting for players...</div>
+    </div>
+    <div id="perkAlert"></div>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+        import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+        import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+
+        // === GAME CONFIG ===
+        const TEAM_COLORS = ['#ffffff', '#3498db', '#9b59b6', '#e74c3c', '#2ecc71'];
+        const TEAM_COLORS_HEX = [0xffffff, 0x3498db, 0x9b59b6, 0xe74c3c, 0x2ecc71];
+        const MAX_PLAYERS = 15;
+        const COUNTDOWN_TIME = 30;
+        const R = 900;
+        const SEPARATION_RADIUS = 60; // Anti-clustering
+        const ALLY_REPULSION = 80;    // Allies push each other apart
+
+        // === PENTAGRAM COUNTER SYSTEM ===
+        // Each class counters 2 and is countered by 2
+        const COUNTERS = {
+            support: { counters: ['controller', 'recon'], counteredBy: ['skirmisher', 'assault'] },
+            recon: { counters: ['controller', 'skirmisher'], counteredBy: ['support', 'assault'] },
+            controller: { counters: ['assault', 'skirmisher'], counteredBy: ['support', 'recon'] },
+            assault: { counters: ['support', 'recon'], counteredBy: ['controller', 'skirmisher'] },
+            skirmisher: { counters: ['support', 'assault'], counteredBy: ['controller', 'recon'] }
+        };
+
+        // === CLASS STATS (v2.1 BALANCED) ===
+        const CLASSES = {
+            support: {
+                // BUFFED: eva 5→8%
+                hp: 88, dmg: [35, 38], acc: 0.93, eva: 0.08, exec: 0.00, momentum: 10,
+                hitbox: 1.00, range: 0.30, color: '#ffffff', colorHex: 0xffffff, emoji: '⚪', name: 'Support',
+                perks: ['secondChance', 'teamAura'],
+                teamBonus: { type: 'damageResist', value: 0.05 },
+                baseAggression: 0.5, // More cautious
+                role: 'backline',
+                damageReduction: 0
+            },
+            recon: {
+                // NERFED: acc 91→87%, range 1.0→0.80
+                hp: 87, dmg: [35, 38], acc: 0.87, eva: 0.04, exec: 0.16, momentum: 5,
+                hitbox: 1.02, range: 0.80, color: '#3498db', colorHex: 0x3498db, emoji: '🔵', name: 'Recon',
+                perks: ['disrupt', 'precision'],
+                teamBonus: { type: 'accuracy', value: 0.05 },
+                baseAggression: 0.65, // More flanking
+                role: 'flank',
+                damageReduction: 0
+            },
+            controller: {
+                // BUFFED: hp 67→85, range 0.38→0.50, +15% DR
+                hp: 85, dmg: [35, 37], acc: 0.80, eva: 0.00, exec: 0.05, momentum: 0,
+                hitbox: 1.05, range: 0.50, color: '#9b59b6', colorHex: 0x9b59b6, emoji: '🟣', name: 'Controller',
+                perks: ['suppress', 'anchor'],
+                teamBonus: { type: 'cooldownReduction', value: 0.05 },
+                baseAggression: 0.35, // Area dominance
+                role: 'anchor',
+                damageReduction: 0.15
+            },
+            assault: {
+                hp: 89, dmg: [35, 40], acc: 0.95, eva: 0.08, exec: 0.22, momentum: 30,
+                hitbox: 1.08, range: 0.50, color: '#e74c3c', colorHex: 0xe74c3c, emoji: '🔴', name: 'Assault',
+                perks: ['rampage', 'execution'],
+                teamBonus: { type: 'damage', value: 0.05 },
+                baseAggression: 0.95,
+                role: 'frontline',
+                damageReduction: 0
+            },
+            skirmisher: {
+                // BUFFED: range 0.22→0.35, dmg 40-48
+                hp: 83, dmg: [40, 48], acc: 0.87, eva: 0.08, exec: 0.05, momentum: 40,
+                hitbox: 1.03, range: 0.35, color: '#2ecc71', colorHex: 0x2ecc71, emoji: '🟢', name: 'Skirmisher',
+                perks: ['bleed', 'counter'],
+                teamBonus: { type: 'momentum', value: 10 },
+                baseAggression: 0.75, // More kiting
+                role: 'roam',
+                damageReduction: 0
+            }
+        };
+        const classKeys = Object.keys(CLASSES);
+
+        // === GAME STATE ===
+        let gameState = 'lobby';
+        let players = [];
+        let projectiles = [];
+        let orbs = [];
+        let projectile3Ds = [];
+        let round = 1;
+        let countdown = 0;
+        let targetPlayers = 9;
+        let perkTimer = 0;
+        let teamsAliveAtRoundStart = 5;
+        let logEntries = [];
+
+        // === PERK POOLS ===
+        const PERKS_A = [
+            { id: 'secondLife', name: 'Second Life', desc: 'Respawn with 25% HP', effect: (p) => { p.hasSecondLife = true; } },
+            { id: 'accPlus', name: 'Accuracy+', desc: '+5% Accuracy', effect: (p) => { p.accBonus = (p.accBonus || 0) + 0.05; } },
+            { id: 'evaPlus', name: 'Evasion+', desc: '+5% Evasion', effect: (p) => { p.evaBonus = (p.evaBonus || 0) + 0.05; } },
+            { id: 'dmgPlus', name: 'Damage+', desc: '+5% Damage', effect: (p) => { p.dmgBonus = (p.dmgBonus || 0) + 0.05; } },
+            { id: 'hpPlus', name: 'Health+', desc: '+5% Max HP', effect: (p) => { p.maxHp *= 1.05; p.hp = Math.min(p.hp * 1.05, p.maxHp); } }
+        ];
+        const PERKS_B = [
+            { id: 'contract', name: 'CONTRACT', desc: 'Conditional XP' },
+            { id: 'momentum', name: 'MOMENTUM', desc: '+10% XP per round' },
+            { id: 'allIn', name: 'ALL IN', desc: 'Risk XP for multiplier' },
+            { id: 'teamXp', name: 'TEAM XP', desc: '+5% team XP' },
+            { id: 'xpPirate', name: 'XP PIRATE', desc: 'Damage => XP' }
+        ];
+        let usedPerks = new Set();
+        let currentPerkA = null, currentPerkB = null;
+
+        // === THREE.JS SETUP ===
+        const container = document.getElementById('container');
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 5000);
+        camera.position.set(0, 800, 500);
+        camera.lookAt(0, 0, 0);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.setClearColor(0x050508);
+        renderer.toneMapping = THREE.ACESFilmicToneMapping;
+        renderer.toneMappingExposure = 1.2;
+        container.appendChild(renderer.domElement);
+
+        scene.add(new THREE.AmbientLight(0x404060, 0.5));
+        const dirLight = new THREE.DirectionalLight(0xffffff, 1.0);
+        dirLight.position.set(200, 600, 300);
+        scene.add(dirLight);
+        scene.add(new THREE.PointLight(0x00f5ff, 0.5, 800));
+
+        const composer = new EffectComposer(renderer);
+        composer.addPass(new RenderPass(scene, camera));
+        composer.addPass(new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 0.8, 0.4, 0.85));
+
+        // Arena floor
+        const floorMaterial = new THREE.ShaderMaterial({
+            uniforms: { uTime: { value: 0 } },
+            vertexShader: `varying vec2 vUv; void main() { vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`,
+            fragmentShader: `
+                varying vec2 vUv;
+                void main() {
+                    vec2 center = vUv - 0.5;
+                    float dist = length(center);
+                    float brightness = max(0.15 - dist * 0.2, 0.02);
+                    float gridX = abs(fract(vUv.x * 15.0 + 0.5) - 0.5);
+                    float gridY = abs(fract(vUv.y * 15.0 + 0.5) - 0.5);
+                    float gridLine = smoothstep(0.02, 0.04, min(gridX, gridY));
+                    vec3 color = vec3(0.06, 0.06, 0.12) * brightness * 10.0;
+                    color += vec3(0.15, 0.15, 0.25) * (1.0 - gridLine) * 0.3;
+                    color += vec3(0.0, 0.8, 1.0) * exp(-dist * 4.0) * 0.3;
+                    gl_FragColor = vec4(color, 1.0);
+                }
+            `
+        });
+        const floor = new THREE.Mesh(new THREE.PlaneGeometry(1200, 1200), floorMaterial);
+        floor.rotation.x = -Math.PI / 2;
+        scene.add(floor);
+        const border = new THREE.Mesh(
+            new THREE.RingGeometry(580, 600, 64),
+            new THREE.MeshBasicMaterial({ color: 0x3a3a5a, side: THREE.DoubleSide, transparent: true, opacity: 0.8 })
+        );
+        border.rotation.x = -Math.PI / 2;
+        border.position.y = 1;
+        scene.add(border);
+
+        // === ORB CLASS ===
+        // Visual size scaling - amplified for clarity
+        // Hitbox: Support 1.00, Recon 1.02, Skirmisher 1.03, Controller 1.05, Assault 1.08
+        // Visual: Support smallest → Assault largest
+        const VISUAL_SIZES = {
+            support: { shell: 20, core: 8, ring: [22, 26] },      // Smallest - nimble
+            recon: { shell: 22, core: 9, ring: [24, 28] },        // Small - agile
+            skirmisher: { shell: 24, core: 10, ring: [26, 30] },  // Medium-small
+            controller: { shell: 28, core: 11, ring: [30, 34] },  // Large - anchor
+            assault: { shell: 32, core: 13, ring: [34, 38] }      // Largest - tank
+        };
+
+        class Orb3D {
+            constructor(player) {
+                this.player = player;
+                this.group = new THREE.Group();
+
+                const sizes = VISUAL_SIZES[player.classKey];
+
+                // Shell - scaled per class
+                const shellMat = new THREE.MeshStandardMaterial({
+                    color: player.config.colorHex,
+                    metalness: 0.3,
+                    roughness: 0.4,
+                    transparent: true,
+                    opacity: 0.9
+                });
+                this.shell = new THREE.Mesh(new THREE.SphereGeometry(sizes.shell, 32, 32), shellMat);
+                this.group.add(this.shell);
+
+                // Core light
+                this.coreLight = new THREE.PointLight(player.config.colorHex, 1.0, sizes.shell * 4);
+                this.group.add(this.coreLight);
+
+                // Inner core - scaled
+                this.core = new THREE.Mesh(
+                    new THREE.SphereGeometry(sizes.core, 16, 16),
+                    new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.8 })
+                );
+                this.group.add(this.core);
+
+                // Team ring - scaled
+                this.ring = new THREE.Mesh(
+                    new THREE.RingGeometry(sizes.ring[0], sizes.ring[1], 32),
+                    new THREE.MeshBasicMaterial({ color: TEAM_COLORS_HEX[player.team - 1], side: THREE.DoubleSide, transparent: true, opacity: 0.8 })
+                );
+                this.ring.rotation.x = -Math.PI / 2;
+                this.ring.position.y = -sizes.shell * 0.8;
+                this.group.add(this.ring);
+
+                // Trail
+                this.trailPoints = [];
+                this.trailGeometry = new THREE.BufferGeometry();
+                this.trail = new THREE.Line(this.trailGeometry, new THREE.LineBasicMaterial({ color: player.config.colorHex, transparent: true, opacity: 0.5 }));
+                scene.add(this.trail);
+
+                this.statusGroup = new THREE.Group();
+                this.group.add(this.statusGroup);
+                this.sizes = sizes; // Store for status effects
+                scene.add(this.group);
+            }
+            update(dt) {
+                const p = this.player;
+                if (!p.alive) { this.group.visible = false; return; }
+                this.group.visible = true;
+                this.group.position.set(p.x, 25, p.y);
+                const hpPct = p.hp / p.maxHp;
+                this.coreLight.intensity = 0.3 + hpPct * 0.7;
+                this.core.material.opacity = 0.4 + hpPct * 0.6;
+                const speed = Math.sqrt(p.vx * p.vx + p.vy * p.vy);
+                this.shell.scale.setScalar(1.0 + Math.sin(Date.now() * 0.01) * 0.02);
+                this.trailPoints.unshift(new THREE.Vector3(p.x, 15, p.y));
+                if (this.trailPoints.length > 20) this.trailPoints.pop();
+                this.trailGeometry.setFromPoints(this.trailPoints);
+                this.trail.material.opacity = speed > 50 ? 0.5 : 0.1;
+                this.ring.rotation.z += dt * 0.5;
+                while (this.statusGroup.children.length > 0) this.statusGroup.remove(this.statusGroup.children[0]);
+                // Berserk (Assault < 40%)
+                if (p.classKey === 'assault' && hpPct < 0.4) {
+                    this.shell.material.emissive = new THREE.Color(0xff3300);
+                    this.shell.material.emissiveIntensity = 0.5 + Math.sin(Date.now() * 0.02) * 0.3;
+                } else {
+                    this.shell.material.emissive = new THREE.Color(0x000000);
+                    this.shell.material.emissiveIntensity = 0;
+                }
+                // Execute window
+                if (hpPct < 0.25) {
+                    this.core.material.color.setHex(0xff5050);
+                    this.core.material.opacity = Math.random() > 0.9 ? 0.3 : 0.9;
+                    const haloSize = this.sizes.shell * 1.4;
+                    const halo = new THREE.Mesh(
+                        new THREE.RingGeometry(haloSize, haloSize + 3, 32),
+                        new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.3, side: THREE.DoubleSide })
+                    );
+                    halo.rotation.x = -Math.PI / 2;
+                    this.statusGroup.add(halo);
+                } else {
+                    this.core.material.color.setHex(0xffffff);
+                }
+                // Momentum overdrive
+                if (speed > 150) {
+                    const shockSize = this.sizes.shell * 1.2;
+                    const shock = new THREE.Mesh(
+                        new THREE.RingGeometry(shockSize, shockSize + 5, 16),
+                        new THREE.MeshBasicMaterial({ color: 0x66ccff, transparent: true, opacity: 0.4, side: THREE.DoubleSide })
+                    );
+                    shock.rotation.x = -Math.PI / 2;
+                    this.statusGroup.add(shock);
+                }
+                // Bleed visual
+                if (p.bleedTimer > 0) this.shell.material.color.setHex(0xcc4444);
+                else this.shell.material.color.setHex(p.config.colorHex);
+            }
+            destroy() { scene.remove(this.group); scene.remove(this.trail); }
+        }
+
+        // === PROJECTILE CLASS ===
+        class Projectile3D {
+            constructor(proj) {
+                this.data = proj;
+                this.mesh = new THREE.Mesh(new THREE.SphereGeometry(5, 8, 8), new THREE.MeshBasicMaterial({ color: TEAM_COLORS_HEX[proj.attacker.team - 1], transparent: true, opacity: 0.9 }));
+                this.trailPoints = [];
+                this.trailGeometry = new THREE.BufferGeometry();
+                this.trail = new THREE.Line(this.trailGeometry, new THREE.LineBasicMaterial({ color: TEAM_COLORS_HEX[proj.attacker.team - 1], transparent: true, opacity: 0.6 }));
+                scene.add(this.mesh);
+                scene.add(this.trail);
+            }
+            update() {
+                this.mesh.position.set(this.data.x, 25, this.data.y);
+                this.trailPoints.unshift(new THREE.Vector3(this.data.x, 25, this.data.y));
+                if (this.trailPoints.length > 10) this.trailPoints.pop();
+                this.trailGeometry.setFromPoints(this.trailPoints);
+            }
+            destroy() { scene.remove(this.mesh); scene.remove(this.trail); }
+        }
+
+        // === UTILITY FUNCTIONS ===
+        function dist(a, b) { return Math.sqrt((a.x - b.x) ** 2 + (a.y - b.y) ** 2); }
+        function addLog(text, type = 'hit') {
+            logEntries.unshift({ text, type, time: Date.now() });
+            if (logEntries.length > 20) logEntries.pop();
+            document.getElementById('feedContent').innerHTML = logEntries.map(l => `<div class="feed-entry ${l.type}">${l.text}</div>`).join('');
+        }
+
+        // === AI: PENTAGRAM TARGET SELECTION ===
+        function selectTarget(p, enemies) {
+            if (enemies.length === 0) return null;
+            const counters = COUNTERS[p.classKey].counters;
+            const counteredBy = COUNTERS[p.classKey].counteredBy;
+
+            // Blood frenzy: prioritize low HP enemies (<35%)
+            const bloodTargets = enemies.filter(e => e.hp / e.maxHp < 0.35);
+
+            // Tier 1: Counter targets at low HP (execute priority)
+            const counterBlood = bloodTargets.filter(e => counters.includes(e.classKey));
+            if (counterBlood.length > 0) return counterBlood.reduce((a, b) => a.hp < b.hp ? a : b);
+
+            // Tier 2: Any bleeding/weakened enemies
+            if (bloodTargets.length > 0) {
+                // Prefer ones we counter
+                const preferred = bloodTargets.filter(e => counters.includes(e.classKey));
+                if (preferred.length > 0) return preferred[0];
+                // Avoid ones that counter us unless desperate
+                const safe = bloodTargets.filter(e => !counteredBy.includes(e.classKey));
+                if (safe.length > 0) return safe.reduce((a, b) => a.hp < b.hp ? a : b);
+                return bloodTargets[0];
+            }
+
+            // Tier 3: Counter targets (primary focus)
+            const counterTargets = enemies.filter(e => counters.includes(e.classKey));
+            if (counterTargets.length > 0) {
+                // Prefer closer ones
+                return counterTargets.reduce((a, b) => dist(p, a) < dist(p, b) ? a : b);
+            }
+
+            // Tier 4: Neutral targets (not countered by)
+            const neutral = enemies.filter(e => !counteredBy.includes(e.classKey));
+            if (neutral.length > 0) return neutral.reduce((a, b) => dist(p, a) < dist(p, b) ? a : b);
+
+            // Tier 5: Countered-by targets (cautious engagement)
+            // Only engage if we have advantage (HP, allies nearby)
+            const dangerous = enemies.filter(e => counteredBy.includes(e.classKey));
+            if (dangerous.length > 0) {
+                // Pick the lowest HP one and be defensive
+                p.cautiousMode = true;
+                return dangerous.reduce((a, b) => a.hp < b.hp ? a : b);
+            }
+
+            return enemies[0];
+        }
+
+        // === AI: AGGRESSION CALCULATOR ===
+        function getAggression(p, target) {
+            let aggro = p.config.baseAggression;
+            const hpPct = p.hp / p.maxHp;
+            const counters = COUNTERS[p.classKey].counters;
+            const counteredBy = COUNTERS[p.classKey].counteredBy;
+
+            // Counter matchup modifiers
+            if (counters.includes(target.classKey)) aggro += 0.3; // Hunting prey
+            if (counteredBy.includes(target.classKey)) aggro -= 0.25; // Cautious
+
+            // HP modifiers
+            if (hpPct < 0.3) aggro -= 0.2; // Low HP = cautious (except Assault)
+            if (p.classKey === 'assault' && hpPct < 0.4) aggro += 0.4; // Berserk mode
+            if (target.hp / target.maxHp < 0.25) aggro += 0.3; // Smell blood
+
+            // Rampage bonus (Assault momentum scaling)
+            if (p.classKey === 'assault') {
+                const momScale = p.config.momentum / 40;
+                aggro += momScale * 0.2;
+            }
+
+            // Second Chance bonus (Support more aggressive with safety net)
+            if (p.classKey === 'support' && p.hasSecondChance) aggro += 0.15;
+            if (p.classKey === 'support' && !p.hasSecondChance) aggro -= 0.1;
+
+            return Math.max(0.1, Math.min(1.0, aggro));
+        }
+
+        // === AI: CLASS-SPECIFIC MOVEMENT ===
+        function getClassMovement(p, target, allies, enemies, time) {
+            const phase = p.id * 2.1;
+            const hpPct = p.hp / p.maxHp;
+            const momentum = p.config.momentum / 40;
+            const angleToTarget = Math.atan2(target.y - p.y, target.x - p.x);
+            const distToTarget = dist(p, target);
+            const maxRange = R * p.config.range;
+            let moveX = p.x, moveY = p.y;
+
+            switch (p.classKey) {
+                case 'support':
+                    // Backline positioning, maintain distance, prioritize aura range
+                    const idealDist = maxRange * 0.7;
+                    const allyCenter = allies.length > 0
+                        ? { x: allies.reduce((s, a) => s + a.x, 0) / allies.length, y: allies.reduce((s, a) => s + a.y, 0) / allies.length }
+                        : p;
+                    // Stay near allies for aura
+                    moveX = allyCenter.x + Math.cos(angleToTarget) * -80;
+                    moveY = allyCenter.y + Math.sin(angleToTarget) * -80;
+                    // Orbiting pattern
+                    moveX += Math.sin(time * 0.8 + phase) * 40;
+                    moveY += Math.cos(time * 0.8 + phase) * 40;
+                    break;
+
+                case 'recon':
+                    // Flanking behavior, high mobility, hit-and-run
+                    const flankAngle = angleToTarget + Math.PI / 2 + Math.sin(time * 2) * 0.5;
+                    const flankDist = 80 + Math.sin(time * 3 + phase) * 60;
+                    moveX = target.x + Math.cos(flankAngle) * flankDist;
+                    moveY = target.y + Math.sin(flankAngle) * flankDist;
+                    // Precision evasion after attacking
+                    if (p.precisionTimer > 0) {
+                        moveX += Math.cos(time * 10) * 30;
+                        moveY += Math.sin(time * 10) * 30;
+                    }
+                    break;
+
+                case 'controller':
+                    // Anchor behavior - find strategic position and hold
+                    if (!p.anchorPoint || Math.random() < 0.01) {
+                        // Pick central position between threats
+                        const threatCenter = enemies.length > 0
+                            ? { x: enemies.reduce((s, e) => s + e.x, 0) / enemies.length, y: enemies.reduce((s, e) => s + e.y, 0) / enemies.length }
+                            : { x: 0, y: 0 };
+                        p.anchorPoint = {
+                            x: (p.x + threatCenter.x) * 0.3,
+                            y: (p.y + threatCenter.y) * 0.3
+                        };
+                    }
+                    moveX = p.anchorPoint.x;
+                    moveY = p.anchorPoint.y;
+                    // Very slow drift only
+                    moveX += Math.sin(time * 0.2 + phase) * 10;
+                    moveY += Math.cos(time * 0.2 + phase) * 10;
+                    break;
+
+                case 'assault':
+                    // Direct charge, berserk at low HP
+                    if (hpPct < 0.4) {
+                        // BERSERK - relentless pursuit
+                        moveX = target.x + Math.cos(time * 8 + phase) * 20;
+                        moveY = target.y + Math.sin(time * 8 + phase) * 20;
+                    } else {
+                        // Aggressive advance with minor weaving
+                        moveX = target.x + Math.cos(time * 3) * 40;
+                        moveY = target.y + Math.sin(time * 3) * 40;
+                    }
+                    // Ram through - head straight at target
+                    const chargeWeight = 0.8;
+                    moveX = moveX * (1 - chargeWeight) + target.x * chargeWeight;
+                    moveY = moveY * (1 - chargeWeight) + target.y * chargeWeight;
+                    break;
+
+                case 'skirmisher':
+                    // Circle-strafing, hit-and-run, constant repositioning
+                    const spiralSpeed = 5 + momentum * 3;
+                    const spiralRadius = 50 + Math.sin(time * 2) * 40;
+                    const spiralAngle = time * spiralSpeed + phase;
+                    moveX = target.x + Math.cos(spiralAngle) * spiralRadius;
+                    moveY = target.y + Math.sin(spiralAngle) * spiralRadius;
+                    // Quick direction changes
+                    if (Math.random() < 0.02) {
+                        moveX += (Math.random() - 0.5) * 100;
+                        moveY += (Math.random() - 0.5) * 100;
+                    }
+                    break;
+            }
+
+            return { x: moveX, y: moveY };
+        }
+
+        // === AI: ANTI-CLUSTERING ===
+        function applyAntiClustering(p, allPlayers) {
+            let repelX = 0, repelY = 0;
+
+            allPlayers.filter(o => o !== p && o.alive).forEach(other => {
+                const d = dist(p, other);
+                const isAlly = other.team === p.team;
+
+                // Allies repel more strongly
+                const repelDist = isAlly ? ALLY_REPULSION : SEPARATION_RADIUS;
+
+                if (d < repelDist && d > 0) {
+                    const force = (repelDist - d) / repelDist;
+                    const angle = Math.atan2(p.y - other.y, p.x - other.x);
+                    const strength = isAlly ? 2.0 : 1.5; // Allies push harder
+                    repelX += Math.cos(angle) * force * strength * 100;
+                    repelY += Math.sin(angle) * force * strength * 100;
+                }
+            });
+
+            return { x: repelX, y: repelY };
+        }
+
+        // === AI: MAIN UPDATE ===
+        function aiUpdate(dt) {
+            if (gameState !== 'playing') return;
+            const time = Date.now() * 0.001;
+
+            players.filter(p => p.alive).forEach(p => {
+                if (p.stunnedTimer > 0) return; // Stunned
+
+                const enemies = players.filter(e => e.alive && e.team !== p.team);
+                const allies = players.filter(a => a.alive && a.team === p.team && a !== p);
+                if (enemies.length === 0) return;
+
+                // Select target using pentagram logic
+                const target = selectTarget(p, enemies);
+                if (!target) return;
+                p.currentTarget = target;
+
+                // Calculate aggression
+                const aggro = getAggression(p, target);
+
+                // Get class-specific movement
+                const movement = getClassMovement(p, target, allies, enemies, time);
+
+                // Apply anti-clustering
+                const repulsion = applyAntiClustering(p, players);
+
+                // Combine movement vectors
+                let targetX = movement.x + repulsion.x;
+                let targetY = movement.y + repulsion.y;
+
+                // Aggression modifies distance
+                const distToTarget = dist(p, target);
+                const maxRange = R * p.config.range;
+                const idealDist = maxRange * (1.0 - aggro * 0.5); // Higher aggro = closer
+
+                // Adjust based on ideal distance
+                if (distToTarget > idealDist * 1.2) {
+                    // Too far - move closer
+                    targetX = target.x + (p.x - target.x) * 0.3;
+                    targetY = target.y + (p.y - target.y) * 0.3;
+                } else if (distToTarget < idealDist * 0.5 && p.cautiousMode) {
+                    // Too close and cautious - back off
+                    targetX = p.x + (p.x - target.x) * 0.5;
+                    targetY = p.y + (p.y - target.y) * 0.5;
+                }
+
+                p.targetX = targetX;
+                p.targetY = targetY;
+                p.cautiousMode = false;
+
+                // === SHOOTING LOGIC ===
+                if (p.attackCooldown <= 0 && distToTarget < maxRange) {
+                    // Accuracy check before shooting (pre-shot)
+                    const shootChance = p.config.acc + (aggro * 0.1); // More aggressive = more likely to shoot
+                    if (Math.random() < shootChance) {
+                        createProjectile(p, target);
+                        p.attackCooldown = 0.35 + Math.random() * 0.25;
+
+                        // Precision trigger (Recon)
+                        if (p.classKey === 'recon') p.precisionTimer = 2;
+                    }
+                }
+            });
+        }
+
+        // === PHYSICS UPDATE ===
+        function updatePhysics(dt) {
+            players.filter(p => p.alive).forEach(p => {
+                const dx = p.targetX - p.x, dy = p.targetY - p.y;
+                const d = Math.sqrt(dx * dx + dy * dy);
+
+                // Speed multipliers per class
+                const speedMult = { assault: 1.4, skirmisher: 1.35, recon: 1.2, support: 1.1, controller: 0.6 }[p.classKey] || 1.0;
+
+                // Suppress effect reduces speed
+                const suppressMult = p.suppressedTimer > 0 ? 0.5 : 1.0;
+
+                if (d > 2) {
+                    const baseSpeed = 1200 * speedMult * suppressMult;
+                    p.vx += (dx / d) * baseSpeed * dt;
+                    p.vy += (dy / d) * baseSpeed * dt;
+                }
+
+                // Friction
+                p.vx *= 0.96;
+                p.vy *= 0.96;
+                p.x += p.vx * dt;
+                p.y += p.vy * dt;
+
+                // Bounds
+                const bound = 560;
+                if (Math.abs(p.x) > bound) { p.x = Math.sign(p.x) * bound; p.vx *= -0.7; }
+                if (Math.abs(p.y) > bound) { p.y = Math.sign(p.y) * bound; p.vy *= -0.7; }
+
+                // Timers
+                if (p.attackCooldown > 0) p.attackCooldown -= dt;
+                if (p.spawnProtection > 0) p.spawnProtection -= dt;
+                if (p.bleedTimer > 0) p.bleedTimer -= dt;
+                if (p.precisionTimer > 0) p.precisionTimer -= dt;
+                if (p.disruptedTimer > 0) p.disruptedTimer -= dt;
+                if (p.stunnedTimer > 0) p.stunnedTimer -= dt;
+                if (p.suppressedTimer > 0) p.suppressedTimer -= dt;
+            });
+        }
+
+        // === PROJECTILE CREATION ===
+        function createProjectile(attacker, target) {
+            const dx = target.x - attacker.x;
+            const dy = target.y - attacker.y;
+            const d = Math.sqrt(dx * dx + dy * dy) || 1;
+            const proj = {
+                x: attacker.x, y: attacker.y,
+                startX: attacker.x, startY: attacker.y,
+                vx: (dx / d) * 500, vy: (dy / d) * 500,
+                attacker, target, alive: true
+            };
+            projectiles.push(proj);
+            projectile3Ds.push(new Projectile3D(proj));
+        }
+
+        // === PROJECTILE UPDATE ===
+        function updateProjectiles(dt) {
+            projectiles.forEach((p, i) => {
+                if (!p.alive) return;
+                p.x += p.vx * dt;
+                p.y += p.vy * dt;
+                projectile3Ds[i]?.update();
+
+                players.filter(pl => pl.alive && pl.team !== p.attacker.team).forEach(target => {
+                    const d = dist(p, target);
+                    const hitRadius = target.radius || 25;
+                    if (d < hitRadius + 5 && target.spawnProtection <= 0) {
+                        // Accuracy check
+                        const acc = p.attacker.config.acc + (p.attacker.accBonus || 0) + (p.attacker.teamAccuracyBonus || 0);
+                        if (Math.random() > acc) { p.alive = false; return; }
+
+                        // Evasion check
+                        let eva = target.config.eva + (target.evaBonus || 0);
+                        if (target.disruptedTimer > 0) eva *= 0.9;
+                        if (target.precisionTimer > 0) eva += 0.04;
+                        if (Math.random() < eva) { p.alive = false; return; }
+
+                        // Damage calc
+                        let dmg = p.attacker.config.dmg[0] + Math.random() * (p.attacker.config.dmg[1] - p.attacker.config.dmg[0]);
+
+                        // Range falloff
+                        const travel = Math.sqrt((p.x - p.startX) ** 2 + (p.y - p.startY) ** 2);
+                        const maxRange = R * p.attacker.config.range;
+                        const falloffStart = maxRange * 0.7;
+                        if (travel >= maxRange) dmg *= 0.05;
+                        else if (travel > falloffStart) dmg *= 1.0 - 0.95 * ((travel - falloffStart) / (maxRange - falloffStart)) ** 2;
+
+                        // === PERKS ===
+                        // Rampage (Assault)
+                        if (p.attacker.classKey === 'assault') dmg *= 1 + 0.30 * (p.attacker.config.momentum / 40);
+
+                        // Execution (Assault)
+                        if (p.attacker.classKey === 'assault' && target.hp / target.maxHp < 0.20 && Math.random() < 0.22) {
+                            dmg = target.hp + 1;
+                            addLog(`⚡ ${p.attacker.username} EXECUTED ${target.username}!`, 'kill');
+                        }
+
+                        // Counter (Skirmisher vs high acc)
+                        if (p.attacker.classKey === 'skirmisher' && target.config.acc >= 0.90) dmg *= 1.30;
+
+                        // Team bonuses
+                        dmg *= 1 + (p.attacker.teamDamageBonus || 0);
+                        dmg *= 1 - (target.teamDamageResist || 0);
+
+                        // Class damage reduction (Controller has 15%)
+                        dmg *= 1 - (target.config.damageReduction || 0);
+
+                        // Suppress (Controller)
+                        if (target.classKey === 'controller') p.attacker.suppressedTimer = 3;
+
+                        // Disrupt (Recon stun)
+                        if (p.attacker.classKey === 'recon' && target.config.exec < 0.10 && target.classKey !== 'controller' && Math.random() < 0.25) {
+                            target.stunnedTimer = 0.5;
+                            addLog(`⚡ ${target.username} stunned!`, 'hit');
+                        }
+
+                        // Bleed (Skirmisher)
+                        if (p.attacker.classKey === 'skirmisher') target.bleedTimer = 5;
+
+                        target.hp -= dmg;
+                        addLog(`${p.attacker.username} hit ${target.username} for ${Math.round(dmg)}`, 'hit');
+
+                        if (target.hp <= 0) {
+                            // Second Chance
+                            if (target.hasSecondChance && target.classKey === 'support' && Math.random() >= (p.attacker.config.exec || 0)) {
+                                target.hp = target.maxHp * 0.5;
+                                target.hasSecondChance = false;
+                                target.spawnProtection = 2;
+                                addLog(`🟢 ${target.username} SECOND CHANCE!`, 'heal');
+                            } else {
+                                target.alive = false;
+                                addLog(`💀 ${p.attacker.username} eliminated ${target.username}`, 'kill');
+                            }
+                            updateTeamScores();
+                            checkRoundState();
+                        }
+                        p.alive = false;
+                    }
+                });
+                if (Math.abs(p.x) > 700 || Math.abs(p.y) > 700) p.alive = false;
+            });
+
+            for (let i = projectiles.length - 1; i >= 0; i--) {
+                if (!projectiles[i].alive) {
+                    projectile3Ds[i]?.destroy();
+                    projectiles.splice(i, 1);
+                    projectile3Ds.splice(i, 1);
+                }
+            }
+        }
+
+        // === GAME FLOW ===
+        function getSpawnPositions(teamCount) {
+            const positions = [];
+            const baseRadius = 400 + Math.random() * 160;
+            const startAngle = Math.random() * Math.PI * 2;
+            for (let t = 0; t < teamCount; t++) {
+                const angle = startAngle + (t / teamCount) * Math.PI * 2;
+                const cx = Math.cos(angle) * baseRadius;
+                const cy = Math.sin(angle) * baseRadius;
+                const spread = 40;
+                positions.push([
+                    { x: cx, y: cy },
+                    { x: cx + Math.cos(Math.PI / 3) * spread, y: cy + Math.sin(Math.PI / 3) * spread },
+                    { x: cx + Math.cos(-Math.PI / 3) * spread, y: cy + Math.sin(-Math.PI / 3) * spread }
+                ]);
+            }
+            return positions;
+        }
+
+        // Shuffle helper for randomized class assignment
+        function shuffleArray(arr) {
+            const shuffled = [...arr];
+            for (let i = shuffled.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+            }
+            return shuffled;
+        }
+
+        // Track class assignments per team for balanced composition
+        let teamClassPools = {};
+
+        function addPlayer(username, platform = 'Discord') {
+            if (players.length >= MAX_PLAYERS) return null;
+            if (players.find(p => p.username.toLowerCase() === username.toLowerCase())) return null;
+            const team = Math.floor(players.length / 3) + 1;
+
+            // Initialize team's shuffled class pool if new team
+            if (!teamClassPools[team]) {
+                teamClassPools[team] = shuffleArray(classKeys).slice(0, 3);
+            }
+
+            // Get next class from team's shuffled pool
+            const teamMemberIndex = players.filter(p => p.team === team).length;
+            const classKey = teamClassPools[team][teamMemberIndex] || classKeys[Math.floor(Math.random() * classKeys.length)];
+
+            const config = CLASSES[classKey];
+            const player = {
+                id: players.length, username, platform, team, classKey, config,
+                hp: config.hp, maxHp: config.hp,
+                x: 0, y: 0, vx: 0, vy: 0, targetX: 0, targetY: 0, homeX: 0, homeY: 0,
+                alive: true, radius: 25 * config.hitbox, spawnProtection: 4, attackCooldown: 0,
+                hasSecondChance: config.perks.includes('secondChance'),
+                bleedTimer: 0, precisionTimer: 0, disruptedTimer: 0, stunnedTimer: 0, suppressedTimer: 0,
+                cautiousMode: false, currentTarget: null, anchorPoint: null
+            };
+            players.push(player);
+            orbs.push(new Orb3D(player));
+            updateLobbyUI();
+            checkCountdown();
+            return player;
+        }
+
+        function updateLobbyUI() {
+            const grid = document.getElementById('playerGrid');
+            grid.innerHTML = '';
+            for (let i = 0; i < MAX_PLAYERS; i++) {
+                const p = players[i];
+                const slot = document.createElement('div');
+                slot.className = `player-slot ${p ? 'filled team-' + p.team : ''}`;
+                if (p) slot.innerHTML = `<div class="orb" style="background: radial-gradient(circle at 30% 30%, ${p.config.color}, #333);"></div><div class="name">${p.username}</div><div class="team-badge">TEAM ${p.team}</div>`;
+                grid.appendChild(slot);
+            }
+            document.getElementById('currentCount').textContent = players.length;
+        }
+
+        function checkCountdown() {
+            if (players.length >= 9 && countdown <= 0) {
+                countdown = COUNTDOWN_TIME;
+                document.getElementById('countdown').style.display = 'block';
+                document.getElementById('waitingMsg').textContent = 'Starting soon...';
+            }
+        }
+
+        function startCombat() {
+            gameState = 'playing';
+            document.getElementById('lobbyUI').style.display = 'none';
+            document.getElementById('overlayHUD').style.display = 'block';
+            const teamCount = Math.ceil(players.length / 3);
+            const spawns = getSpawnPositions(teamCount);
+
+            // Apply team passives
+            for (let team = 1; team <= teamCount; team++) {
+                const teamPlayers = players.filter(p => p.team === team);
+                let teamDR = 0, teamDmg = 0, teamAcc = 0;
+                teamPlayers.forEach(p => {
+                    if (p.classKey === 'support') teamDR += 0.05;
+                    if (p.classKey === 'assault') teamDmg += 0.05;
+                    if (p.classKey === 'recon') teamAcc += 0.05;
+                });
+                teamPlayers.forEach(p => {
+                    p.teamDamageResist = teamDR;
+                    p.teamDamageBonus = teamDmg;
+                    p.teamAccuracyBonus = teamAcc;
+                });
+            }
+
+            players.forEach((p, i) => {
+                const spawn = spawns[p.team - 1]?.[i % 3] || { x: 0, y: 0 };
+                p.x = spawn.x; p.y = spawn.y;
+                p.targetX = spawn.x; p.targetY = spawn.y;
+                p.homeX = spawn.x; p.homeY = spawn.y;
+            });
+            teamsAliveAtRoundStart = teamCount;
+            updateTeamScores();
+            addLog('⚔️ ROUND 1 BEGINS!', 'kill');
+        }
+
+        function updateTeamScores() {
+            const scores = document.getElementById('teamScores');
+            const teams = [...new Set(players.map(p => p.team))];
+            scores.innerHTML = teams.map(t => {
+                const alive = players.filter(p => p.team === t && p.alive).length;
+                const total = players.filter(p => p.team === t).length;
+                return `<div class="team-score" style="background: ${TEAM_COLORS[t - 1]}40; border: 2px solid ${TEAM_COLORS[t - 1]};">TEAM ${t}: ${alive}/${total}</div>`;
+            }).join('');
+        }
+
+        function checkRoundState() {
+            const aliveTeams = [...new Set(players.filter(p => p.alive).map(p => p.team))];
+            if (aliveTeams.length === 1) {
+                gameState = 'victory';
+                document.getElementById('perkAlert').innerHTML = `<div style="font-size:2.5rem;color:#ffd700;">🏆 TEAM ${aliveTeams[0]} WINS! 🏆</div>`;
+                document.getElementById('perkAlert').style.display = 'block';
+            } else if (aliveTeams.length < teamsAliveAtRoundStart && gameState === 'playing') {
+                startPerkDraft();
+            }
+        }
+
+        function startPerkDraft() {
+            gameState = 'perkDraft';
+            perkTimer = 8;
+            currentPerkA = PERKS_A.filter(p => !usedPerks.has(p.id))[0] || PERKS_A[0];
+            currentPerkB = PERKS_B.filter(p => !usedPerks.has(p.id))[0] || PERKS_B[0];
+            usedPerks.add(currentPerkA.id);
+            usedPerks.add(currentPerkB.id);
+            document.getElementById('perkAlert').innerHTML = `
+                <div style="color:#ff6b35;">ROUND ${round} COMPLETE</div>
+                <div style="margin:15px 0;">Choose your perk:</div>
+                <div class="perk-option" onclick="window.selectPerk('A')"><div class="perk-name">${currentPerkA.name}</div><div class="perk-desc">${currentPerkA.desc}</div></div>
+                <div class="perk-option" onclick="window.selectPerk('B')"><div class="perk-name">${currentPerkB.name}</div><div class="perk-desc">${currentPerkB.desc}</div></div>
+                <div id="perkTimerDisplay" style="margin-top:15px;color:#888;">Auto-select in ${perkTimer}s</div>
+            `;
+            document.getElementById('perkAlert').style.display = 'block';
+            addLog(`⚡ ROUND ${round} COMPLETE`, 'kill');
+        }
+
+        window.selectPerk = function (choice) {
+            const perk = choice === 'A' ? currentPerkA : currentPerkB;
+            players.filter(p => p.alive).forEach(p => { if (perk.effect) perk.effect(p); });
+            endPerkDraft();
+        };
+
+        function endPerkDraft() {
+            round++;
+            teamsAliveAtRoundStart = [...new Set(players.filter(p => p.alive).map(p => p.team))].length;
+            players.filter(p => p.alive).forEach(p => {
+                p.spawnProtection = 4;
+                p.targetX = p.homeX + (Math.random() - 0.5) * 100;
+                p.targetY = p.homeY + (Math.random() - 0.5) * 100;
+            });
+            gameState = 'playing';
+            document.getElementById('perkAlert').style.display = 'none';
+            document.getElementById('roundNum').textContent = round;
+            addLog(`⚔️ ROUND ${round} BEGINS!`, 'kill');
+        }
+
+        // === ANIMATION LOOP ===
+        let lastTime = performance.now();
+
+        function animate() {
+            requestAnimationFrame(animate);
+            const now = performance.now();
+            const dt = Math.min((now - lastTime) / 1000, 0.1);
+            lastTime = now;
+
+            if (gameState === 'lobby' && countdown > 0) {
+                countdown -= dt;
+                document.getElementById('countdownTimer').textContent = Math.ceil(countdown);
+                if (countdown <= 0) startCombat();
+            }
+
+            if (gameState === 'perkDraft') {
+                perkTimer -= dt;
+                const display = document.getElementById('perkTimerDisplay');
+                if (display) display.textContent = `Auto-select in ${Math.ceil(perkTimer)}s`;
+                if (perkTimer <= 0) {
+                    players.filter(p => p.alive).forEach(p => { if (currentPerkA.effect) currentPerkA.effect(p); });
+                    endPerkDraft();
+                }
+            }
+
+            floorMaterial.uniforms.uTime.value = now * 0.001;
+
+            if (gameState === 'playing') {
+                aiUpdate(dt);
+                updatePhysics(dt);
+                updateProjectiles(dt);
+                orbs.forEach(orb => orb.update(dt));
+            }
+
+            camera.position.x = Math.sin(now * 0.0002) * 30;
+            camera.position.z = 500 + Math.cos(now * 0.0003) * 20;
+            camera.lookAt(0, 0, 0);
+            composer.render();
+        }
+
+        // === INIT ===
+        const urlParams = new URLSearchParams(window.location.search);
+        const allNames = ['Zeus', 'Apollo', 'Hera', 'Ares', 'Athena', 'Poseidon', 'Hades', 'Artemis', 'Hermes', 'Dionysus', 'Hephaestus', 'Demeter', 'Persephone', 'Eros', 'Nike'];
+
+        // Support ?teams=N (3, 4, or 5) or ?demo=1 (defaults to 3 teams)
+        const teamCount = parseInt(urlParams.get('teams')) || (urlParams.get('demo') === '1' ? 3 : 0);
+
+        if (teamCount >= 3 && teamCount <= 5) {
+            const playerCount = teamCount * 3; // 3 players per team
+            for (let i = 0; i < playerCount; i++) {
+                addPlayer(allNames[i] || `Player${i + 1}`, 'Demo');
+            }
+            setTimeout(() => startCombat(), 500);
+        }
+        window.addPlayer = addPlayer;
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            composer.setSize(window.innerWidth, window.innerHeight);
+        });
+        updateLobbyUI();
+        animate();
+    </script>
+</body>
+
+</html>

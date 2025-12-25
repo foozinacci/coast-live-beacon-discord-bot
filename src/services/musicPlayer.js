@@ -22,6 +22,15 @@ class MusicPlayer {
     }
 
     async joinChannel(voiceChannel) {
+        // Check if bot has permission to connect (works for private channels too)
+        const permissions = voiceChannel.permissionsFor(this.client.user);
+        if (!permissions.has('Connect')) {
+            throw new Error('Missing permission to connect to this voice channel');
+        }
+        if (!permissions.has('Speak')) {
+            throw new Error('Missing permission to speak in this voice channel');
+        }
+
         const connection = joinVoiceChannel({
             channelId: voiceChannel.id,
             guildId: voiceChannel.guild.id,
@@ -41,7 +50,13 @@ class MusicPlayer {
     getPlayer(guildId) {
         if (!this.players.has(guildId)) {
             const player = createAudioPlayer();
-            this.players.set(guildId, { player, connection: null, current: null });
+            this.players.set(guildId, {
+                player,
+                connection: null,
+                current: null,
+                lastPlayedUrl: null,  // Track last played song URL
+                repeatCount: 0         // Count consecutive repeats
+            });
 
             player.on(AudioPlayerStatus.Idle, () => {
                 this.playNext(guildId);
@@ -88,6 +103,51 @@ class MusicPlayer {
             this.startIdleTimer(guildId);
             return;
         }
+
+        // REPEAT DETECTION: Check if same song is playing again
+        if (playerData.lastPlayedUrl && track.url === playerData.lastPlayedUrl) {
+            playerData.repeatCount++;
+            console.log('🔁 Repeat detected:', track.title, '(count:', playerData.repeatCount + ')');
+
+            if (playerData.repeatCount >= 2) {
+                // Third time same song - auto leave
+                console.log('🔁 Same song 3x - leaving voice channel');
+                this.stop(guildId);
+
+                // Notify music channel
+                const queue = this.queueStorage.getGuildQueue(guildId);
+                if (queue.musicChannelId) {
+                    try {
+                        const channel = await this.client.channels.fetch(queue.musicChannelId);
+                        if (channel) {
+                            await channel.send('⏹️ **Left voice channel** - Same song queued 3 times in a row. Add a different song with `!lbsr`!');
+                        }
+                    } catch (e) { }
+                }
+                return;
+            } else if (playerData.repeatCount === 1) {
+                // Second time - warn and wait for new song
+                console.log('🔁 Same song 2x - waiting for different song');
+                this.startIdleTimer(guildId);
+
+                const queue = this.queueStorage.getGuildQueue(guildId);
+                if (queue.musicChannelId) {
+                    try {
+                        const channel = await this.client.channels.fetch(queue.musicChannelId);
+                        if (channel) {
+                            await channel.send('⏸️ **Paused** - Same song queued twice. Add a different song with `!lbsr` to continue!');
+                        }
+                    } catch (e) { }
+                }
+                return;
+            }
+        } else {
+            // Different song - reset counter
+            playerData.repeatCount = 0;
+        }
+
+        // Track this song as last played
+        playerData.lastPlayedUrl = track.url;
 
         console.log('🎵 Playing:', track.title);
 

@@ -1,5 +1,5 @@
 module.exports = {
-    name: 'play',
+    name: 'lbplay',
     description: 'Start music playback',
     async execute(message, args) {
         const member = message.member;

@@ -1,5 +1,5 @@
 module.exports = {
-    name: 'stop',
+    name: 'lbstop',
     description: 'Stop music and disconnect',
     async execute(message, args) {
         const isMod = message.member.permissions.has('ManageMessages') ||

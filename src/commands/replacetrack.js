@@ -1,7 +1,7 @@
 const QueueStorage = require('../utils/queueStorage');
 
 module.exports = {
-    name: 'replacetrack',
+    name: 'lbreplacetrack',
     description: 'Replace one of your tracks with a new one',
     async execute(message, args) {
         if (args.length < 2) {

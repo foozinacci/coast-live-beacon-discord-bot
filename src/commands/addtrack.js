@@ -42,8 +42,8 @@ function extractSpotifyTrackId(url) {
 }
 
 module.exports = {
-    name: 'addtrack',
-    description: 'Add a track to the music queue',
+    name: 'lbsr',
+    description: 'Add a track to the music queue (song request)',
     async execute(message, args) {
         if (args.length === 0) {
             return message.reply('**Add a Track**\n\n' +

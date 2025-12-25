@@ -1,7 +1,7 @@
 const StreamerStorage = require('../utils/streamerStorage');
 
 module.exports = {
-  name: 'setrole',
+  name: 'lbsetrole',
   description: 'Set the role to mention when streams go live',
   async execute(message, args) {
     if (!message.member.permissions.has('Administrator')) {

@@ -4,7 +4,7 @@ const BackupManager = require('../utils/backupManager');
 const TwitchClient = require('../api/twitchClient');
 
 module.exports = {
-  name: 'addstreamer',
+  name: 'lbaddstreamer',
   description: 'Add a Twitch streamer to monitor',
   async execute(message, args) {
     if (args.length === 0) {

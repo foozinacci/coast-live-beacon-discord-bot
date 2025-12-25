@@ -1,7 +1,7 @@
 const StreamerStorage = require('../utils/streamerStorage');
 
 module.exports = {
-    name: 'setupupdates',
+    name: 'lbsetupdates',
     description: 'Set the channel for stream summaries (mod-only updates)',
     async execute(message, args) {
         if (!message.member.permissions.has('Administrator')) {

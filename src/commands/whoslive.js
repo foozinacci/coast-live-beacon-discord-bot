@@ -7,7 +7,7 @@ const cooldowns = new Map();
 const COOLDOWN_MS = 10000; // 10 seconds
 
 module.exports = {
-    name: 'whoslive',
+    name: 'lblive',
     description: 'Check who is currently streaming (only works in notification channel)',
     async execute(message, args) {
         const storage = new StreamerStorage();

@@ -1,5 +1,5 @@
 module.exports = {
-    name: 'forceskip',
+    name: 'lbforceskip',
     description: 'Force skip current track (Mod only)',
     async execute(message, args) {
         const isMod = message.member.permissions.has('ManageMessages') ||

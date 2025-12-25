@@ -1,7 +1,7 @@
 const QueueStorage = require('../utils/queueStorage');
 
 module.exports = {
-    name: 'removetrack',
+    name: 'lbremovetrack',
     description: 'Remove a track from your queue',
     async execute(message, args) {
         if (args.length === 0) {

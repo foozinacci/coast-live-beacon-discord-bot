@@ -1,7 +1,7 @@
 const AnnouncementStorage = require('../utils/announcementStorage');
 
 module.exports = {
-    name: 'setupannouncements',
+    name: 'lbsetannounce',
     description: 'Set the channel for birthday and promotional announcements',
     async execute(message, args) {
         if (!message.member.permissions.has('Administrator')) {

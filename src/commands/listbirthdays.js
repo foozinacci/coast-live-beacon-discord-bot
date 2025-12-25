@@ -2,7 +2,7 @@ const { EmbedBuilder } = require('discord.js');
 const AnnouncementStorage = require('../utils/announcementStorage');
 
 module.exports = {
-    name: 'listbirthdays',
+    name: 'lbbdays',
     description: 'View upcoming birthdays',
     async execute(message, args) {
         const storage = new AnnouncementStorage();

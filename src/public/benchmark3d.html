@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WILDCARD - Battle Simulation Benchmark</title>
+    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: linear-gradient(135deg, #0a0a1a, #1a1a3e);
+            min-height: 100vh;
+            font-family: 'Rajdhani', sans-serif;
+            color: #fff;
+            padding: 30px;
+        }
+
+        h1 {
+            text-align: center;
+            color: #ffd700;
+            margin-bottom: 20px;
+        }
+
+        .controls {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        button {
+            background: linear-gradient(135deg, #ffd700, #ff9500);
+            border: none;
+            padding: 12px 30px;
+            font-size: 1.1rem;
+            font-weight: 700;
+            border-radius: 8px;
+            cursor: pointer;
+            color: #000;
+            margin: 5px;
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .results {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        .sim-group {
+            background: rgba(0, 0, 0, 0.4);
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .sim-group h2 {
+            color: #4ecdc4;
+            margin-bottom: 15px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th,
+        td {
+            padding: 8px 12px;
+            text-align: left;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        th {
+            color: #ffd700;
+        }
+
+        .average {
+            color: #00ff88;
+            font-weight: 700;
+        }
+
+        .log {
+            background: rgba(0, 0, 0, 0.5);
+            padding: 15px;
+            border-radius: 8px;
+            max-height: 300px;
+            overflow-y: auto;
+            font-size: 0.85rem;
+            color: #aaa;
+            margin-top: 20px;
+        }
+
+        .error {
+            color: #ff6b6b;
+        }
+
+        .warning {
+            color: #ffd700;
+        }
+
+        .success {
+            color: #00ff88;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>🃏 WILDCARD Battle Simulation Benchmark</h1>
+
+    <div class="controls">
+        <button id="runBtn" onclick="runAllBenchmarks()">Run Full Benchmark (5 sims × 3 team sizes)</button>
+        <button onclick="clearResults()">Clear Results</button>
+    </div>
+
+    <div class="results" id="results"></div>
+    <div class="log" id="log"></div>
+
+    <script>
+        // === CLASS STATS (Exact from image) ===
+        const CLASSES = {
+            support: { hp: 88, accuracy: 0.93, evasion: 0.05, execute: 0.00, momentum: 10, hitbox: 1.00, damage: [35, 38], color: '⚪', hasSecondChance: true },
+            controller: { hp: 67, accuracy: 0.80, evasion: 0.00, execute: 0.05, momentum: 0, hitbox: 1.05, damage: [35, 37], color: '🟣', suppress: true },
+            assault: { hp: 89, accuracy: 0.95, evasion: 0.08, execute: 0.22, momentum: 30, hitbox: 1.08, damage: [35, 40], color: '🔴', rampage: true },
+            recon: { hp: 87, accuracy: 0.91, evasion: 0.04, execute: 0.16, momentum: 5, hitbox: 1.02, damage: [35, 38], color: '🔵', disrupt: true },
+            skirmisher: { hp: 83, accuracy: 0.87, evasion: 0.08, execute: 0.05, momentum: 40, hitbox: 1.03, damage: [35, 50], color: '🟢', bleed: true }
+        };
+
+        const CLASS_KEYS = Object.keys(CLASSES);
+
+        // === PERK SYSTEM ===
+        const PERK_A = ['Second Life', 'Accuracy+', 'Evasion+', 'Damage+', 'Health+'];
+        const PERK_B = ['CONTRACT', 'MOMENTUM', 'ALL IN', 'TEAM XP', 'XP PIRATE'];
+
+        // === TEAM COMPOSITION RULES ===
+        function assignTeams(numTeams) {
+            const playersPerTeam = 3;
+            const teams = [];
+            const globalClassCount = {};
+
+            for (let t = 0; t < numTeams; t++) {
+                const team = { id: t + 1, players: [], classesUsed: new Set() };
+
+                for (let p = 0; p < playersPerTeam; p++) {
+                    // Find valid class (max 1 per team, max 3 global)
+                    let validClasses = CLASS_KEYS.filter(c => {
+                        if (team.classesUsed.has(c)) return false; // Max 1 per team
+                        if ((globalClassCount[c] || 0) >= 3) return false; // Max 3 global
+                        // 3-team ban: no Support+Skirmisher on same team
+                        if (numTeams === 3) {
+                            if (c === 'skirmisher' && team.classesUsed.has('support')) return false;
+                            if (c === 'support' && team.classesUsed.has('skirmisher')) return false;
+                        }
+                        return true;
+                    });
+
+                    if (validClasses.length === 0) validClasses = CLASS_KEYS; // Fallback
+
+                    const classKey = validClasses[Math.floor(Math.random() * validClasses.length)];
+                    globalClassCount[classKey] = (globalClassCount[classKey] || 0) + 1;
+                    team.classesUsed.add(classKey);
+
+                    team.players.push({
+                        id: `T${t + 1}P${p + 1}`,
+                        classKey,
+                        hp: CLASSES[classKey].hp,
+                        maxHp: CLASSES[classKey].hp,
+                        alive: true,
+                        hasSecondChance: classKey === 'support',
+                        isBleeding: false,
+                        isDisrupted: false,
+                        perkBonuses: { accuracy: 0, evasion: 0, damage: 0, health: 0 }
+                    });
+                }
+
+                teams.push(team);
+            }
+
+            return teams;
+        }
+
+        // === COMBAT SIMULATION ===
+        function calculateHit(attacker, defender) {
+            const atkCfg = CLASSES[attacker.classKey];
+            const defCfg = CLASSES[defender.classKey];
+
+            let accuracy = atkCfg.accuracy + attacker.perkBonuses.accuracy;
+            let evasion = defCfg.evasion + defender.perkBonuses.evasion;
+
+            // Recon precision: +4% evasion when attacking
+            if (attacker.classKey === 'recon') evasion += 0.04;
+
+            const hitChance = accuracy * defCfg.hitbox * (1 - evasion);
+            return Math.random() < Math.max(0.05, Math.min(0.95, hitChance));
+        }
+
+        function calculateDamage(attacker, defender, livingPlayers, maxPlayers) {
+            const atkCfg = CLASSES[attacker.classKey];
+            let dmg = atkCfg.damage[0] + Math.random() * (atkCfg.damage[1] - atkCfg.damage[0]);
+
+            // Global pressure scaling
+            const scale = 1.0 + 0.15 * (livingPlayers - 1) / (maxPlayers - 1);
+            dmg *= scale;
+
+            // Perk bonus
+            dmg *= (1 + attacker.perkBonuses.damage);
+
+            // Assault rampage (+30% with momentum)
+            if (attacker.classKey === 'assault') {
+                dmg *= (1 + (atkCfg.momentum / 100) * 0.30);
+            }
+
+            // Controller suppress (reduce attacker momentum bonus)
+            if (defender.classKey === 'controller') {
+                const atkMom = CLASSES[attacker.classKey].momentum;
+                dmg *= (1 - (atkMom / 100) * 0.15);
+            }
+
+            // Skirmisher counter (+30% vs high accuracy)
+            if (attacker.classKey === 'skirmisher' && CLASSES[defender.classKey].accuracy >= 0.95) {
+                dmg *= 1.30;
+            }
+
+            // Disrupted = no class bonus
+            if (attacker.isDisrupted) {
+                dmg = atkCfg.damage[0] + Math.random() * (atkCfg.damage[1] - atkCfg.damage[0]);
+            }
+
+            return Math.round(dmg);
+        }
+
+        function checkExecute(attacker, defender) {
+            if (defender.hp / defender.maxHp > 0.30) return false;
+            const execChance = CLASSES[attacker.classKey].execute * (1 - defender.hp / defender.maxHp);
+            return Math.random() < execChance;
+        }
+
+        function simulateCombatTick(teams, maxPlayers) {
+            const allPlayers = teams.flatMap(t => t.players).filter(p => p.alive);
+            if (allPlayers.length === 0) return;
+
+            // Random attacker
+            const attacker = allPlayers[Math.floor(Math.random() * allPlayers.length)];
+            const enemies = allPlayers.filter(p => {
+                const atkTeam = teams.find(t => t.players.includes(attacker));
+                const defTeam = teams.find(t => t.players.includes(p));
+                return atkTeam !== defTeam && p.alive;
+            });
+
+            if (enemies.length === 0) return;
+
+            const defender = enemies[Math.floor(Math.random() * enemies.length)];
+
+            // Hit check
+            if (!calculateHit(attacker, defender)) return;
+
+            const damage = calculateDamage(attacker, defender, allPlayers.length, maxPlayers);
+            defender.hp -= damage;
+
+            // Apply debuffs
+            if (attacker.classKey === 'recon' && CLASSES[defender.classKey].execute < 0.15) {
+                defender.isDisrupted = true;
+            }
+            if (attacker.classKey === 'skirmisher') {
+                defender.isBleeding = true;
+            }
+
+            // Execute check
+            if (defender.hp > 0 && checkExecute(attacker, defender)) {
+                defender.hp = 0;
+            }
+
+            // Death
+            if (defender.hp <= 0) {
+                // Support second chance
+                if (defender.hasSecondChance) {
+                    defender.hasSecondChance = false;
+                    defender.hp = Math.round(defender.maxHp * 0.5);
+                } else {
+                    defender.alive = false;
+                }
+            }
+        }
+
+        function countAliveTeams(teams) {
+            return teams.filter(t => t.players.some(p => p.alive)).length;
+        }
+
+        function simulateRound(teams, maxPlayers) {
+            const startTeams = countAliveTeams(teams);
+            let ticks = 0;
+            const maxTicks = 5000;
+
+            while (countAliveTeams(teams) >= startTeams && countAliveTeams(teams) > 1 && ticks < maxTicks) {
+                simulateCombatTick(teams, maxPlayers);
+                ticks++;
+            }
+
+            return ticks;
+        }
+
+        function selectPerks(teams, usedA, usedB) {
+            // Pick random unused perks
+            const availA = PERK_A.filter(p => !usedA.has(p));
+            const availB = PERK_B.filter(p => !usedB.has(p));
+
+            if (availA.length === 0 || availB.length === 0) return null;
+
+            const perkA = availA[Math.floor(Math.random() * availA.length)];
+            const perkB = availB[Math.floor(Math.random() * availB.length)];
+
+            usedA.add(perkA);
+            usedB.add(perkB);
+
+            // Simulate player choices (50/50)
+            teams.forEach(t => {
+                t.players.filter(p => p.alive).forEach(p => {
+                    const choice = Math.random() < 0.5 ? perkA : perkB;
+                    if (choice === 'Accuracy+') p.perkBonuses.accuracy += 0.05;
+                    if (choice === 'Evasion+') p.perkBonuses.evasion += 0.05;
+                    if (choice === 'Damage+') p.perkBonuses.damage += 0.05;
+                    if (choice === 'Health+') {
+                        p.maxHp = Math.round(p.maxHp * 1.05);
+                        p.hp = Math.min(p.hp + Math.round(CLASSES[p.classKey].hp * 0.05), p.maxHp);
+                    }
+                    if (choice === 'Second Life' && p.classKey !== 'support') {
+                        p.hasSecondChance = true;
+                    }
+                });
+            });
+
+            return { perkA, perkB };
+        }
+
+        function runSimulation(numTeams) {
+            const teams = assignTeams(numTeams);
+            const maxPlayers = numTeams * 3;
+            const usedA = new Set();
+            const usedB = new Set();
+
+            const startTime = Date.now();
+            let round = 1;
+            let totalTicks = 0;
+            const rounds = [];
+
+            while (countAliveTeams(teams) > 1 && round <= 10) {
+                const roundTicks = simulateRound(teams, maxPlayers);
+                totalTicks += roundTicks;
+
+                const alive = countAliveTeams(teams);
+                rounds.push({ round, ticks: roundTicks, teamsAlive: alive });
+
+                if (alive > 1) {
+                    selectPerks(teams, usedA, usedB);
+                }
+
+                round++;
+            }
+
+            const winner = teams.find(t => t.players.some(p => p.alive));
+            const duration = Date.now() - startTime;
+
+            return {
+                numTeams,
+                rounds: rounds.length,
+                totalTicks,
+                winner: winner?.id,
+                duration,
+                roundDetails: rounds
+            };
+        }
+
+        // === BENCHMARK RUNNER ===
+        const results = [];
+
+        function log(msg, type = '') {
+            const el = document.getElementById('log');
+            el.innerHTML += `<div class="${type}">[${new Date().toLocaleTimeString()}] ${msg}</div>`;
+            el.scrollTop = el.scrollHeight;
+        }
+
+        function clearResults() {
+            document.getElementById('results').innerHTML = '';
+            document.getElementById('log').innerHTML = '';
+            results.length = 0;
+        }
+
+        async function runAllBenchmarks() {
+            const btn = document.getElementById('runBtn');
+            btn.disabled = true;
+            clearResults();
+
+            log('Starting benchmark...', 'success');
+
+            const teamSizes = [3, 4, 5];
+            const simsPerSize = 5;
+
+            for (const numTeams of teamSizes) {
+                log(`Running ${simsPerSize} simulations for ${numTeams} teams...`);
+
+                const sizeResults = [];
+                for (let i = 0; i < simsPerSize; i++) {
+                    await new Promise(r => setTimeout(r, 10)); // Yield
+                    const result = runSimulation(numTeams);
+                    sizeResults.push(result);
+                    log(`  Sim ${i + 1}: ${result.rounds} rounds, ${result.totalTicks} ticks, Team ${result.winner} won`);
+                }
+
+                // Calculate averages
+                const avgRounds = sizeResults.reduce((a, r) => a + r.rounds, 0) / simsPerSize;
+                const avgTicks = sizeResults.reduce((a, r) => a + r.totalTicks, 0) / simsPerSize;
+                const avgDuration = sizeResults.reduce((a, r) => a + r.duration, 0) / simsPerSize;
+
+                // Display results
+                displayResults(numTeams, sizeResults, { avgRounds, avgTicks, avgDuration });
+            }
+
+            log('Benchmark complete!', 'success');
+            btn.disabled = false;
+        }
+
+        function displayResults(numTeams, sims, avg) {
+            const el = document.getElementById('results');
+
+            let html = `<div class="sim-group">
+                <h2>${numTeams} Teams (${numTeams * 3} Players)</h2>
+                <table>
+                    <tr><th>Sim</th><th>Rounds</th><th>Combat Ticks</th><th>Winner</th><th>Duration (ms)</th></tr>`;
+
+            sims.forEach((s, i) => {
+                html += `<tr>
+                    <td>#${i + 1}</td>
+                    <td>${s.rounds}</td>
+                    <td>${s.totalTicks}</td>
+                    <td>Team ${s.winner}</td>
+                    <td>${s.duration}</td>
+                </tr>`;
+            });
+
+            html += `<tr class="average">
+                <td>AVG</td>
+                <td>${avg.avgRounds.toFixed(1)}</td>
+                <td>${Math.round(avg.avgTicks)}</td>
+                <td>-</td>
+                <td>${avg.avgDuration.toFixed(1)}</td>
+            </tr>`;
+
+            html += '</table></div>';
+            el.innerHTML += html;
+        }
+    </script>
+</body>
+
+</html>

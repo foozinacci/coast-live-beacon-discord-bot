@@ -2,7 +2,7 @@ const { EmbedBuilder } = require('discord.js');
 const XPStorage = require('../utils/xpStorage');
 
 module.exports = {
-    name: 'level',
+    name: 'lblevel',
     description: 'View your level and XP',
     async execute(message, args) {
         const storage = new XPStorage();

@@ -1,5 +1,5 @@
 module.exports = {
-    name: 'skip',
+    name: 'lbskip',
     description: 'Vote to skip current track',
     async execute(message, args) {
         const member = message.member;

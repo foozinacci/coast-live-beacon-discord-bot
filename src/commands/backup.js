@@ -4,7 +4,7 @@ const fs = require('fs');
 const path = require('path');
 
 module.exports = {
-    name: 'backup',
+    name: 'lbbackup',
     description: 'Manage bot data backups',
     async execute(message, args) {
         if (!message.member.permissions.has('Administrator')) {

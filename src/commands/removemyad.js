@@ -1,7 +1,7 @@
 const AnnouncementStorage = require('../utils/announcementStorage');
 
 module.exports = {
-    name: 'removemyad',
+    name: 'lbremovead',
     description: 'Remove one of your scheduled ads',
     async execute(message, args) {
         const storage = new AnnouncementStorage();

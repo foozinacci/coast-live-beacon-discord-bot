@@ -1,7 +1,7 @@
 const QueueStorage = require('../utils/queueStorage');
 
 module.exports = {
-    name: 'setmusicchannel',
+    name: 'lbsetmusic',
     description: 'Set the music text channel (Admin only)',
     async execute(message, args) {
         if (!message.member.permissions.has('Administrator')) {

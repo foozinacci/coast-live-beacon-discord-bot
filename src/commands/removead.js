@@ -2,7 +2,7 @@ const { EmbedBuilder } = require('discord.js');
 const AnnouncementStorage = require('../utils/announcementStorage');
 
 module.exports = {
-    name: 'removead',
+    name: 'lbremad',
     description: 'Remove ads from a user (admin only)',
     async execute(message, args) {
         // Check admin permissions

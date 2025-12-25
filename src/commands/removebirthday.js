@@ -1,7 +1,7 @@
 const AnnouncementStorage = require('../utils/announcementStorage');
 
 module.exports = {
-    name: 'removebirthday',
+    name: 'lbrembday',
     description: 'Remove a tracked birthday',
     async execute(message, args) {
         // Check moderator permissions

@@ -2,7 +2,7 @@ const { EmbedBuilder } = require('discord.js');
 const StreakStorage = require('../utils/streakStorage');
 
 module.exports = {
-    name: 'streak',
+    name: 'lbstreak',
     description: 'View your streaks',
     async execute(message, args) {
         const storage = new StreakStorage();

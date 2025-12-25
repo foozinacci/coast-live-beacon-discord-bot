@@ -4,7 +4,7 @@ const BackupManager = require('../utils/backupManager');
 const TwitchClient = require('../api/twitchClient');
 
 module.exports = {
-    name: 'addstreamers',
+    name: 'lbaddstreamers',
     description: 'Add multiple Twitch streamers at once',
     async execute(message, args) {
         const isModerator = message.member.permissions.has('ManageMessages') ||

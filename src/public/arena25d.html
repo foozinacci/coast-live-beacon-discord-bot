@@ -1,0 +1,2136 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>WILDCARD - Tactical Arena</title>
+    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;700&family=Orbitron:wght@700&display=swap"
+        rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #050508;
+            font-family: 'Rajdhani', sans-serif;
+            overflow: hidden;
+            color: #fff;
+        }
+
+        /* === FULLSCREEN ARENA === */
+        #gameCanvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+        }
+
+        /* === OVERLAY HUD === */
+        #overlayHUD {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            pointer-events: none;
+            z-index: 100;
+            display: none;
+        }
+
+        /* === TEAM SCORES (Top Right Corner) === */
+        #teamScores {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .team-score {
+            padding: 6px 14px;
+            border-radius: 4px;
+            font-weight: bold;
+            font-size: 0.85rem;
+            min-width: 100px;
+            text-align: center;
+            backdrop-filter: blur(8px);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+        }
+
+        /* === ROUND DISPLAY (Top Center) === */
+        #roundDisplay {
+            position: absolute;
+            top: 15px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.2rem;
+            color: #fff;
+            background: rgba(0, 0, 0, 0.6);
+            padding: 8px 25px;
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(8px);
+        }
+
+        /* === WEBCAM ZONE (Bottom Right - Transparent Frame) === */
+        #webcamZone {
+            position: absolute;
+            bottom: 15px;
+            right: 15px;
+            width: 280px;
+            height: 160px;
+            border: 2px solid rgba(255, 255, 255, 0.15);
+            border-radius: 8px;
+            background: rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(4px);
+        }
+
+        #webcamZone::after {
+            content: '📹';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 1.5rem;
+            opacity: 0.1;
+        }
+
+        /* === KILLFEED (Bottom Left) === */
+        #feedContent {
+            position: absolute;
+            bottom: 15px;
+            left: 15px;
+            width: 280px;
+            max-height: 180px;
+            overflow-y: auto;
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 6px;
+            padding: 10px 12px;
+            backdrop-filter: blur(8px);
+        }
+
+        #feedContent::-webkit-scrollbar {
+            width: 3px;
+        }
+
+        #feedContent::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 2px;
+        }
+
+        .feed-entry {
+            padding: 4px 0;
+            font-size: 0.8rem;
+            line-height: 1.3;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .feed-entry.kill {
+            color: #ff5555;
+        }
+
+        .feed-entry.hit {
+            color: #888;
+        }
+
+        .feed-entry.heal {
+            color: #55ff55;
+        }
+
+        /* === RIGHT SIDEBAR (Compact Broadcast Panel) === */
+        #sidebarPanel {
+            width: 300px;
+            height: 100vh;
+            background: linear-gradient(180deg,
+                    rgba(8, 8, 18, 0.98) 0%,
+                    rgba(4, 4, 12, 0.99) 100%);
+            border-left: 1px solid rgba(80, 200, 255, 0.12);
+            display: flex;
+            flex-direction: column;
+            z-index: 200;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Animated accent line */
+        #sidebarPanel::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 3px;
+            height: 100%;
+            background: linear-gradient(180deg,
+                    #00f5ff 0%,
+                    #9b59b6 25%,
+                    #ff6b35 50%,
+                    #2ecc71 75%,
+                    #00f5ff 100%);
+            background-size: 100% 400%;
+            animation: gradientFlow 8s linear infinite;
+        }
+
+        @keyframes gradientFlow {
+            0% {
+                background-position: 0% 0%;
+            }
+
+            100% {
+                background-position: 0% 400%;
+            }
+        }
+
+        /* === WEBCAM ZONE (Compact Frame) === */
+        #webcamZone {
+            width: calc(100% - 16px);
+            height: 180px;
+            margin: 8px;
+            background: linear-gradient(145deg,
+                    rgba(15, 15, 25, 0.95),
+                    rgba(8, 8, 16, 0.98));
+            border: 1px solid rgba(0, 245, 255, 0.15);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+
+        #webcamZone::after {
+            content: '📹';
+            font-size: 1.8rem;
+            opacity: 0.12;
+        }
+
+        /* === LIVE FEED (Compact) === */
+        #liveFeed {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            margin: 0 8px 8px;
+            background: rgba(0, 0, 0, 0.4);
+            border-radius: 6px;
+            border: 1px solid rgba(255, 255, 255, 0.04);
+        }
+
+        #feedHeader {
+            padding: 14px 18px;
+            background: linear-gradient(90deg,
+                    rgba(0, 245, 255, 0.08),
+                    transparent);
+            border-bottom: 1px solid rgba(0, 245, 255, 0.15);
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.75rem;
+            letter-spacing: 2px;
+            color: #00f5ff;
+            text-transform: uppercase;
+        }
+
+        #feedContent {
+            flex: 1;
+            overflow-y: auto;
+            padding: 12px 16px;
+        }
+
+        #feedContent::-webkit-scrollbar {
+            width: 3px;
+        }
+
+        #feedContent::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.3);
+        }
+
+        #feedContent::-webkit-scrollbar-thumb {
+            background: linear-gradient(180deg, #00f5ff, #9b59b6);
+            border-radius: 3px;
+        }
+
+        .feed-entry {
+            padding: 10px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+            font-size: 0.85rem;
+            line-height: 1.5;
+            animation: feedSlide 0.3s ease-out;
+        }
+
+        @keyframes feedSlide {
+            from {
+                opacity: 0;
+                transform: translateX(-10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .feed-entry.kill {
+            color: #ff4757;
+            text-shadow: 0 0 10px rgba(255, 71, 87, 0.3);
+        }
+
+        .feed-entry.hit {
+            color: #aaa;
+        }
+
+        .feed-entry.heal {
+            color: #2ecc71;
+            text-shadow: 0 0 10px rgba(46, 204, 113, 0.3);
+        }
+
+        .feed-entry.chat {
+            color: #fff;
+        }
+
+        .feed-entry .username {
+            color: #00f5ff;
+            font-weight: bold;
+        }
+
+        .feed-entry .platform {
+            font-size: 0.7rem;
+            opacity: 0.5;
+            margin-right: 4px;
+        }
+
+        /* === BROADCAST LOBBY (Premium Esports) === */
+        #lobbyUI {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+            background:
+                radial-gradient(circle at 20% 80%, rgba(0, 245, 255, 0.03) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(155, 89, 182, 0.03) 0%, transparent 50%),
+                linear-gradient(180deg, #050508 0%, #0a0a14 100%);
+        }
+
+        /* Animated grid background */
+        #lobbyUI::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background-image:
+                linear-gradient(rgba(0, 245, 255, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 245, 255, 0.03) 1px, transparent 1px);
+            background-size: 50px 50px;
+            animation: gridPulse 4s ease-in-out infinite;
+        }
+
+        @keyframes gridPulse {
+
+            0%,
+            100% {
+                opacity: 0.3;
+            }
+
+            50% {
+                opacity: 0.6;
+            }
+        }
+
+        .lobby-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 4.5rem;
+            background: linear-gradient(135deg, #00f5ff, #9b59b6, #ff6b35);
+            background-size: 200% 200%;
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: titleGlow 3s ease infinite;
+            margin-bottom: 10px;
+            position: relative;
+            z-index: 1;
+        }
+
+        @keyframes titleGlow {
+
+            0%,
+            100% {
+                background-position: 0% 50%;
+                filter: drop-shadow(0 0 20px rgba(0, 245, 255, 0.5));
+            }
+
+            50% {
+                background-position: 100% 50%;
+                filter: drop-shadow(0 0 30px rgba(155, 89, 182, 0.5));
+            }
+        }
+
+        .room-code {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 2rem;
+            color: #00f5ff;
+            letter-spacing: 12px;
+            margin-bottom: 20px;
+            padding: 12px 30px;
+            background: rgba(0, 245, 255, 0.05);
+            border: 1px solid rgba(0, 245, 255, 0.2);
+            border-radius: 8px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .join-instruction {
+            font-size: 1.3rem;
+            color: #666;
+            margin-bottom: 35px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .join-instruction span {
+            color: #00f5ff;
+            font-weight: bold;
+            text-shadow: 0 0 10px rgba(0, 245, 255, 0.5);
+        }
+
+        /* === PLAYER SEATS (Esports Cards) === */
+        #seatGrid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 12px;
+            max-width: 750px;
+            margin-bottom: 35px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .seat {
+            width: 130px;
+            height: 85px;
+            background: rgba(10, 10, 20, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .seat::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg,
+                    rgba(255, 255, 255, 0.02) 0%,
+                    transparent 50%);
+            pointer-events: none;
+        }
+
+        .seat.filled {
+            border: 1px solid;
+            background: linear-gradient(145deg,
+                    rgba(20, 20, 40, 0.95),
+                    rgba(10, 10, 25, 0.98));
+            animation: seatGlow 0.5s ease-out;
+        }
+
+        @keyframes seatGlow {
+            0% {
+                transform: scale(0.9);
+                opacity: 0;
+                box-shadow: none;
+            }
+
+            50% {
+                transform: scale(1.05);
+            }
+
+            100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        @keyframes seatPop {
+            0% {
+                transform: scale(0.8);
+                opacity: 0;
+            }
+
+            50% {
+                transform: scale(1.1);
+            }
+
+            100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        .seat .name {
+            font-weight: bold;
+            font-size: 0.9rem;
+            margin-top: 5px;
+        }
+
+        .seat .class-icon {
+            font-size: 1.8rem;
+        }
+
+        .seat .team-badge {
+            font-size: 0.7rem;
+            padding: 2px 8px;
+            border-radius: 10px;
+            margin-top: 3px;
+        }
+
+        /* Team colors: White, Blue, Purple, Red, Green */
+        .team-1 {
+            border-color: #ffffff;
+        }
+
+        .team-1 .team-badge {
+            background: #ffffff;
+            color: #000;
+        }
+
+        .team-2 {
+            border-color: #3498db;
+        }
+
+        .team-2 .team-badge {
+            background: #3498db;
+        }
+
+        .team-3 {
+            border-color: #9b59b6;
+        }
+
+        .team-3 .team-badge {
+            background: #9b59b6;
+        }
+
+        .team-4 {
+            border-color: #e74c3c;
+        }
+
+        .team-4 .team-badge {
+            background: #e74c3c;
+        }
+
+        .team-5 {
+            border-color: #2ecc71;
+        }
+
+        .team-5 .team-badge {
+            background: #2ecc71;
+            color: #000;
+        }
+
+        /* === PLAYER COUNT & TIMER === */
+        .player-count {
+            font-size: 2rem;
+            color: #fff;
+            margin-bottom: 15px;
+        }
+
+        .player-count .current {
+            color: #4ecdc4;
+            font-weight: bold;
+        }
+
+        .player-count .target {
+            color: #888;
+        }
+
+        .countdown {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 3rem;
+            color: #ff6b35;
+            display: none;
+        }
+
+        .waiting-msg {
+            font-size: 1.2rem;
+            color: #666;
+        }
+
+        /* === COMBAT UI (Broadcast Layout) === */
+        #combatUI {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            display: none;
+            pointer-events: none;
+        }
+
+        /* === WEBCAM ZONE (Bottom Right) === */
+        #webcamZone {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            width: 320px;
+            height: 240px;
+            background: linear-gradient(135deg, rgba(30, 30, 50, 0.9), rgba(20, 20, 40, 0.95));
+            border: 3px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), inset 0 0 30px rgba(255, 255, 255, 0.02);
+        }
+
+        #webcamZone::before {
+            content: '📹 WEBCAM OVERLAY';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.9rem;
+            color: rgba(255, 255, 255, 0.3);
+            text-align: center;
+            pointer-events: none;
+        }
+
+        #webcamZone video,
+        #webcamZone img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 12px;
+        }
+
+        /* === ROUND DISPLAY === */
+        #roundDisplay {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.6rem;
+            color: #fff;
+            background: linear-gradient(135deg, rgba(30, 30, 50, 0.85), rgba(20, 20, 40, 0.9));
+            padding: 10px 30px;
+            border-radius: 25px;
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        /* === TEAM SCORES (Top Right, above webcam) === */
+        #teamScores {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .team-score {
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-weight: bold;
+            font-size: 0.95rem;
+            min-width: 120px;
+            text-align: center;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+        }
+
+        /* === COMBAT LOG (Bottom Left) === */
+        #combatLog {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            width: 320px;
+            max-height: 200px;
+            background: linear-gradient(135deg, rgba(0, 0, 0, 0.85), rgba(10, 10, 20, 0.9));
+            border: 2px solid rgba(255, 255, 255, 0.08);
+            border-radius: 12px;
+            padding: 12px 15px;
+            font-size: 0.85rem;
+            overflow-y: auto;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+        }
+
+        #combatLog::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        #combatLog::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 2px;
+        }
+
+        .log-entry {
+            padding: 5px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .log-entry.kill {
+            color: #ff6b6b;
+            font-weight: bold;
+        }
+
+        .log-entry.hit {
+            color: #4ecdc4;
+        }
+
+        .log-entry.heal {
+            color: #2ecc71;
+        }
+
+        #perkAlert {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.9);
+            padding: 30px 60px;
+            border-radius: 16px;
+            border: 2px solid #ff6b35;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.5rem;
+            text-align: center;
+            display: none;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- FULLSCREEN CANVAS -->
+    <canvas id="gameCanvas"></canvas>
+
+    <!-- OVERLAY HUD -->
+    <div id="overlayHUD">
+        <div id="roundDisplay">ROUND <span id="roundNum">1</span></div>
+        <div id="teamScores"></div>
+        <div id="feedContent"></div>
+        <div id="webcamZone"></div>
+        <div id="perkAlert"></div>
+    </div>
+
+    <!-- LOBBY (centered overlay) -->
+    <div id="lobbyUI">
+        <div class="lobby-title">WILDCARD</div>
+        <div class="room-code" id="roomCode">ABCD</div>
+        <div class="join-instruction">Type <span>!lbjoin</span> in chat to play</div>
+
+        <div id="seatGrid"></div>
+
+        <div class="player-count">
+            <span class="current" id="playerCount">0</span>
+            <span class="target">/ <span id="targetCount">9</span></span>
+        </div>
+
+        <div class="countdown" id="countdown">30</div>
+        <div class="waiting-msg" id="waitingMsg">Waiting for players...</div>
+    </div>
+
+    <script>
+        // === GAME CONFIG ===
+        // Team colors: White, Blue, Purple, Red, Green
+        const TEAM_COLORS = ['#ffffff', '#3498db', '#9b59b6', '#e74c3c', '#2ecc71'];
+        const TEAM_THRESHOLDS = [9, 12, 15]; // 3, 4, 5 teams
+        const MAX_PLAYERS = 15;
+        const COUNTDOWN_TIME = 30;
+
+        // === CLASS STATS (EXACT SPEC VALUES) ===
+        // Order matches team colors: White, Blue, Purple, Red, Green
+        const R = 900; // Base Recon max range (across arena)
+        const CLASSES = {
+            support: {
+                hp: 88, dmg: [35, 38], acc: 0.93, eva: 0.05, exec: 0.00, momentum: 10,
+                hitbox: 1.00, range: 0.30, color: '#ffffff', emoji: '⚪', name: 'Support',
+                // Second Chance: Respawn once at 50% HP when eliminated
+                // Team Aura: Pentagon ally bonuses
+                perks: ['secondChance', 'teamAura'],
+                teamBonus: { type: 'damageResist', value: 0.05 }
+            },
+            recon: {
+                hp: 87, dmg: [35, 38], acc: 0.91, eva: 0.04, exec: 0.16, momentum: 5,
+                hitbox: 1.02, range: 1.00, color: '#3498db', emoji: '🔵', name: 'Recon',
+                // Disrupt: Chance to stun targets with low execute chance
+                // Precision: +4% evasion bonus when attacking
+                perks: ['disrupt', 'precision'],
+                teamBonus: { type: 'accuracy', value: 0.05 }
+            },
+            controller: {
+                hp: 67, dmg: [35, 37], acc: 0.80, eva: 0.00, exec: 0.05, momentum: 0,
+                hitbox: 1.05, range: 0.38, color: '#9b59b6', emoji: '🟣', name: 'Controller',
+                // Suppress: Enemies suffer momentum penalty when attacking you
+                // Anchor: Immune to Recon Disruption
+                perks: ['suppress', 'anchor'],
+                teamBonus: { type: 'cooldownReduction', value: 0.05 }
+            },
+            assault: {
+                hp: 89, dmg: [35, 40], acc: 0.95, eva: 0.08, exec: 0.22, momentum: 30,
+                hitbox: 1.08, range: 0.50, color: '#e74c3c', emoji: '🔴', name: 'Assault',
+                // Rampage: +30% damage scaling with momentum
+                // Execution: 22% chance to instant-kill low HP targets
+                perks: ['rampage', 'execution'],
+                teamBonus: { type: 'damage', value: 0.05 }
+            },
+            skirmisher: {
+                hp: 83, dmg: [35, 50], acc: 0.87, eva: 0.08, exec: 0.05, momentum: 40,
+                hitbox: 1.03, range: 0.22, color: '#2ecc71', emoji: '🟢', name: 'Skirmisher',
+                // Bleed: Attacks reduce enemy healing by 50%
+                // Counter: +30% damage vs high-accuracy targets (≥95%)
+                perks: ['bleed', 'counter'],
+                teamBonus: { type: 'momentum', value: 10 }
+            }
+        };
+        const classKeys = Object.keys(CLASSES);
+
+        // === GAME STATE ===
+        let gameState = 'lobby'; // lobby, countdown, playing, perkDraft, victory
+        let players = [];
+        let projectiles = [];
+        let round = 1;
+        let countdown = 0;
+        let targetPlayers = 9;
+        let perkTimer = 0;
+        let teamsAliveAtRoundStart = 5;
+
+        // === PERK POOLS ===
+        const PERKS_A = [
+            { id: 'secondLife', name: 'Second Life', desc: 'Respawn with 25% HP', effect: (p) => { p.hasSecondLife = true; } },
+            { id: 'accPlus', name: 'Accuracy+', desc: '+5% Accuracy', effect: (p) => { p.accBonus = (p.accBonus || 0) + 0.05; } },
+            { id: 'evaPlus', name: 'Evasion+', desc: '+5% Evasion', effect: (p) => { p.evaBonus = (p.evaBonus || 0) + 0.05; } },
+            { id: 'dmgPlus', name: 'Damage+', desc: '+5% Damage', effect: (p) => { p.dmgBonus = (p.dmgBonus || 0) + 0.05; } },
+            { id: 'hpPlus', name: 'Health+', desc: '+5% Max HP', effect: (p) => { p.maxHp *= 1.05; p.hp = Math.min(p.hp * 1.05, p.maxHp); } }
+        ];
+        const PERKS_B = [
+            { id: 'contract', name: 'CONTRACT', desc: 'Conditional XP' },
+            { id: 'momentum', name: 'MOMENTUM', desc: '+10% XP per round' },
+            { id: 'allIn', name: 'ALL IN', desc: 'Risk XP for multiplier' },
+            { id: 'teamXp', name: 'TEAM XP', desc: '+5% team XP' },
+            { id: 'xpPirate', name: 'XP PIRATE', desc: 'Damage => XP' }
+        ];
+        let usedPerks = new Set();
+        let currentPerkA = null;
+        let currentPerkB = null;
+
+        // === CANVAS SETUP (2D rendering with 3D-like visuals) ===
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        function resize() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        resize();
+        window.addEventListener('resize', resize);
+
+        // === ARENA CONFIG (larger for 5 teams) ===
+        const ARENA = {
+            width: 1200,
+            height: 1200,
+            centerX: () => canvas.width / 2,
+            centerY: () => canvas.height / 2,
+            scale: () => Math.min(canvas.width, canvas.height) / 1400
+        };
+
+        // Spawn positions for 5 teams (RANDOMIZED each match)
+        function getSpawnPositions(teamCount) {
+            const positions = [];
+            const baseRadius = 400 + Math.random() * 160; // 400-560
+            const startAngle = Math.random() * Math.PI * 2; // Random rotation
+
+            for (let t = 0; t < teamCount; t++) {
+                const angle = startAngle + (t / 5) * Math.PI * 2;
+                const radiusVariation = baseRadius + (Math.random() - 0.5) * 80;
+                const cx = Math.cos(angle) * radiusVariation;
+                const cy = Math.sin(angle) * radiusVariation;
+
+                // Random spread for teammates
+                const spread = 30 + Math.random() * 40;
+                const spreadAngle = Math.random() * Math.PI * 2;
+                positions.push([
+                    { x: cx, y: cy },
+                    { x: cx + Math.cos(spreadAngle) * spread, y: cy + Math.sin(spreadAngle) * spread },
+                    { x: cx + Math.cos(spreadAngle + 2) * spread, y: cy + Math.sin(spreadAngle + 2) * spread }
+                ]);
+            }
+
+            return positions;
+        }
+
+        // === LOBBY SEATS ===
+        function initSeats() {
+            const grid = document.getElementById('seatGrid');
+            grid.innerHTML = '';
+            for (let i = 0; i < MAX_PLAYERS; i++) {
+                const seat = document.createElement('div');
+                seat.className = 'seat';
+                seat.id = `seat-${i}`;
+                seat.innerHTML = `<div class="class-icon">➕</div>`;
+                grid.appendChild(seat);
+            }
+        }
+        initSeats();
+
+        function generateRoomCode() {
+            const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
+            return Array.from({ length: 4 }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
+        }
+        document.getElementById('roomCode').textContent = generateRoomCode();
+
+        // === PLAYER JOIN ===
+        function addPlayer(username) {
+            if (players.length >= MAX_PLAYERS) return false;
+            if (players.find(p => p.username === username)) return false;
+
+            const team = Math.floor(players.length / 3) + 1;
+            const classKey = classKeys[players.length % classKeys.length];
+            const config = CLASSES[classKey];
+
+            const player = {
+                id: players.length,
+                username,
+                team,
+                classKey,
+                config,
+                hp: config.hp,
+                maxHp: config.hp,
+                x: 0, y: 0,
+                vx: 0, vy: 0,
+                targetX: 0, targetY: 0,
+                radius: 32 * config.hitbox, // Base 32, scaled by class hitbox
+                alive: true,
+                attackCooldown: 0,
+                spawnProtection: 4
+            };
+
+            players.push(player);
+            updateSeat(players.length - 1, player);
+            updatePlayerCount();
+            checkCountdown();
+
+            console.log(`Added ${username} to Team ${team} as ${config.emoji} ${config.name}`);
+            return true;
+        }
+
+        function updateSeat(idx, player) {
+            const seat = document.getElementById(`seat-${idx}`);
+            if (!seat) return;
+
+            seat.className = `seat filled team-${player.team}`;
+            seat.innerHTML = `
+                <div class="class-icon">${player.config.emoji}</div>
+                <div class="name">${player.username}</div>
+                <div class="team-badge">TEAM ${player.team}</div>
+            `;
+        }
+
+        function updatePlayerCount() {
+            document.getElementById('playerCount').textContent = players.length;
+
+            // Smart target calculation
+            if (players.length >= 13) targetPlayers = 15;
+            else if (players.length >= 10) targetPlayers = 12;
+            else targetPlayers = 9;
+
+            document.getElementById('targetCount').textContent = targetPlayers;
+        }
+
+        // === COUNTDOWN LOGIC ===
+        function checkCountdown() {
+            const count = players.length;
+
+            // Start countdown when we hit a threshold
+            if (count >= 9 && countdown <= 0) {
+                startCountdown();
+            }
+
+            // Extend if we're past a threshold
+            if (countdown > 0) {
+                if (count >= 10 && count < 12) {
+                    targetPlayers = 12;
+                    document.getElementById('waitingMsg').textContent = 'Waiting for Team 4...';
+                } else if (count >= 13 && count < 15) {
+                    targetPlayers = 15;
+                    document.getElementById('waitingMsg').textContent = 'Waiting for Team 5...';
+                }
+                document.getElementById('targetCount').textContent = targetPlayers;
+            }
+        }
+
+        function startCountdown() {
+            countdown = COUNTDOWN_TIME;
+            document.getElementById('countdown').style.display = 'block';
+            document.getElementById('waitingMsg').textContent = 'Starting soon...';
+        }
+
+        // === PLAYER CLASS ===
+        class Orb {
+            constructor(player) {
+                Object.assign(this, player);
+            }
+
+            update(dt) {
+                if (!this.alive) return;
+
+                // Movement - AGGRESSIVE
+                const dx = this.targetX - this.x;
+                const dy = this.targetY - this.y;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+
+                // Class-based speed multipliers - AIR HOCKEY SPEED
+                const speedMult = {
+                    assault: 1.4,
+                    skirmisher: 1.35,
+                    recon: 1.2,
+                    support: 1.1,
+                    controller: 1.0
+                }[this.classKey] || 1.0;
+
+                if (dist > 2) {
+                    const baseSpeed = 1200 * speedMult; // TRIPLED speed
+                    this.vx += (dx / dist) * baseSpeed * dt;
+                    this.vy += (dy / dist) * baseSpeed * dt;
+                }
+
+                // EXTREME GLIDE - almost no friction
+                this.vx *= 0.96;
+                this.vy *= 0.96;
+                this.x += this.vx * dt;
+                this.y += this.vy * dt;
+
+                // Bouncy walls like air hockey
+                const bound = 560;
+                if (Math.abs(this.x) > bound) { this.x = Math.sign(this.x) * bound; this.vx *= -0.7; }
+                if (Math.abs(this.y) > bound) { this.y = Math.sign(this.y) * bound; this.vy *= -0.7; }
+
+                // Cooldowns & Status Timers
+                if (this.attackCooldown > 0) this.attackCooldown -= dt;
+                if (this.spawnProtection > 0) this.spawnProtection -= dt;
+                if (this.bleedTimer > 0) this.bleedTimer -= dt;
+                if (this.precisionTimer > 0) this.precisionTimer -= dt;
+                if (this.disruptedTimer > 0) this.disruptedTimer -= dt;
+                if (this.stunnedTimer > 0) this.stunnedTimer -= dt;
+                if (this.suppressedTimer > 0) this.suppressedTimer -= dt;
+            }
+
+            draw(ctx, scale, cx, cy) {
+                if (!this.alive) return;
+
+                const x = cx + this.x * scale;
+                const y = cy + this.y * scale;
+                const r = this.radius * scale;
+
+                // Team color ring (BOLD)
+                ctx.beginPath();
+                ctx.arc(x, y, r + 4, 0, Math.PI * 2);
+                ctx.strokeStyle = TEAM_COLORS[this.team - 1];
+                ctx.lineWidth = 6;
+                ctx.stroke();
+
+                // Spawn protection glow
+                if (this.spawnProtection > 0) {
+                    ctx.beginPath();
+                    ctx.arc(x, y, r + 10, 0, Math.PI * 2);
+                    ctx.strokeStyle = `rgba(255, 255, 255, ${this.spawnProtection / 4})`;
+                    ctx.lineWidth = 3;
+                    ctx.stroke();
+                }
+
+                // Core orb (class color gradient)
+                const gradient = ctx.createRadialGradient(x - r * 0.3, y - r * 0.3, 0, x, y, r);
+                gradient.addColorStop(0, '#ffffff');
+                gradient.addColorStop(0.5, this.config.color);
+                gradient.addColorStop(1, this.config.color);
+
+                ctx.beginPath();
+                ctx.arc(x, y, r, 0, Math.PI * 2);
+                ctx.fillStyle = gradient;
+                ctx.fill();
+
+                // HP indicator (inner brightness)
+                const hpPct = this.hp / this.maxHp;
+                if (hpPct < 0.3) {
+                    // Critical - pulsing red
+                    const pulse = Math.sin(Date.now() * 0.01) * 0.3 + 0.7;
+                    ctx.beginPath();
+                    ctx.arc(x, y, r * 0.6, 0, Math.PI * 2);
+                    ctx.fillStyle = `rgba(255, 50, 50, ${pulse})`;
+                    ctx.fill();
+                }
+
+                // Class emoji
+                ctx.font = `${r * 1.2}px Arial`;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(this.config.emoji, x, y);
+            }
+        }
+
+        // === PROJECTILES ===
+        function createProjectile(attacker, target) {
+            const dx = target.x - attacker.x;
+            const dy = target.y - attacker.y;
+            const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+
+            projectiles.push({
+                x: attacker.x,
+                y: attacker.y,
+                startX: attacker.x,
+                startY: attacker.y,
+                vx: (dx / dist) * 450,
+                vy: (dy / dist) * 450,
+                attacker,
+                target,
+                color: TEAM_COLORS[attacker.team - 1],
+                alive: true
+            });
+        }
+
+        function updateProjectiles(dt) {
+            projectiles.forEach(p => {
+                if (!p.alive) return;
+
+                p.x += p.vx * dt;
+                p.y += p.vy * dt;
+
+                // Hit detection (with full combat mechanics)
+                players.filter(pl => pl.alive && pl.team !== p.attacker.team).forEach(target => {
+                    const dx = target.x - p.x;
+                    const dy = target.y - p.y;
+                    const hitboxRadius = target.radius * (target.config.hitbox || 1);
+
+                    if (Math.sqrt(dx * dx + dy * dy) < hitboxRadius + 5) {
+                        if (target.spawnProtection <= 0) {
+                            // === ACCURACY CHECK (with team bonus) ===
+                            const acc = p.attacker.config.acc + (p.attacker.accBonus || 0) + (p.attacker.teamAccuracyBonus || 0);
+                            if (Math.random() > acc) {
+                                addLog(`${p.attacker.username} missed ${target.username}`, 'hit');
+                                p.alive = false;
+                                return;
+                            }
+
+                            // === PRECISION (Recon perk) ===
+                            // +4% evasion bonus when attacking
+                            if (p.attacker.classKey === 'recon') {
+                                p.attacker.precisionTimer = 2; // 2s of +4% eva after attacking
+                            }
+
+                            // === EVASION CHECK (reduced by disruption, boosted by precision) ===
+                            let eva = target.config.eva + (target.evaBonus || 0);
+                            if (target.disruptedTimer > 0) eva *= 0.9; // -10% from Disruption
+                            if (target.precisionTimer > 0) eva += 0.04; // +4% from Precision (Recon)
+                            if (Math.random() < eva) {
+                                addLog(`${target.username} evaded ${p.attacker.username}!`, 'heal');
+                                p.alive = false;
+                                return;
+                            }
+
+                            // === DAMAGE CALCULATION ===
+                            let dmg = p.attacker.config.dmg[0] + Math.random() * (p.attacker.config.dmg[1] - p.attacker.config.dmg[0]);
+
+                            // === RANGE-BASED DAMAGE FALLOFF ===
+                            const travelDist = Math.sqrt((p.x - p.startX) ** 2 + (p.y - p.startY) ** 2);
+                            const maxRange = R * p.attacker.config.range;
+                            const falloffStart = maxRange * 0.70;
+                            const minDmgMult = p.attacker.classKey === 'recon' ? 0.12 : 0.05;
+
+                            let rangeMult = 1.0;
+                            if (travelDist >= maxRange) {
+                                rangeMult = minDmgMult;
+                            } else if (travelDist > falloffStart) {
+                                const t = (travelDist - falloffStart) / (maxRange - falloffStart);
+                                rangeMult = 1.0 - (1.0 - minDmgMult) * (t * t);
+                            }
+                            dmg *= rangeMult;
+
+                            // Team Damage Bonus (Assault team passive)
+                            dmg *= 1 + (p.attacker.teamDamageBonus || 0);
+
+                            // Perk Damage Bonus
+                            dmg *= 1 + (p.attacker.dmgBonus || 0);
+
+                            // === RAMPAGE (Assault perk) ===
+                            // +30% damage scaling with momentum
+                            if (p.attacker.classKey === 'assault') {
+                                const momScale = p.attacker.config.momentum / 40; // 0-1
+                                dmg *= 1 + (0.30 * momScale);
+                            }
+
+                            // === EXECUTION (Assault perk) ===
+                            // 22% chance to instant-kill low HP targets
+                            if (p.attacker.classKey === 'assault' && target.hp / target.maxHp < 0.20) {
+                                if (Math.random() < 0.22) {
+                                    dmg = target.hp + 1; // Instant kill
+                                    addLog(`⚡ ${p.attacker.username} EXECUTED ${target.username}!`, 'kill');
+                                }
+                            }
+
+                            // === COUNTER (Skirmisher perk) ===
+                            // +30% damage vs high-accuracy targets (≥95%)
+                            if (p.attacker.classKey === 'skirmisher' && target.config.acc >= 0.95) {
+                                dmg *= 1.30;
+                            }
+
+                            // Global Pressure
+                            const livingPlayers = players.filter(pl => pl.alive).length;
+                            const pressure = 1.00 + 0.15 * (livingPlayers - 1) / (14);
+                            dmg *= pressure;
+
+                            // === DAMAGE RESISTANCE (Support team passive) ===
+                            dmg *= 1 - (target.teamDamageResist || 0);
+
+                            // === SUPPRESS (Controller perk) ===
+                            // Enemies attacking Controller suffer momentum penalty
+                            if (target.classKey === 'controller') {
+                                p.attacker.suppressedTimer = 3; // 3s momentum penalty
+                            }
+
+                            // === DISRUPT (Recon perk) ===
+                            // Chance to stun targets with low execute chance
+                            if (p.attacker.classKey === 'recon' && target.config.exec < 0.10) {
+                                // Anchor immunity check
+                                if (target.classKey !== 'controller') {
+                                    if (Math.random() < 0.25) {
+                                        target.stunnedTimer = 0.5; // Brief stun
+                                        addLog(`⚡ ${target.username} stunned by Disruption!`, 'hit');
+                                    }
+                                }
+                            }
+
+                            // === BLEED (Skirmisher perk) ===
+                            if (p.attacker.classKey === 'skirmisher') {
+                                target.bleedTimer = 5; // 5 seconds of -50% healing
+                            }
+
+                            target.hp -= dmg;
+                            addLog(`${p.attacker.username} hit ${target.username} for ${Math.round(dmg)}`, 'hit');
+
+                            // === DEATH CHECK ===
+                            if (target.hp <= 0) {
+                                // Try Second Chance (Support trait)
+                                if (!trySecondChance(target, p.attacker)) {
+                                    target.alive = false;
+                                    addLog(`💀 ${p.attacker.username} eliminated ${target.username}`, 'kill');
+                                    checkRoundState();
+                                }
+                            }
+                        }
+                        p.alive = false;
+                    }
+                });
+
+                // Out of bounds
+                if (Math.abs(p.x) > 700 || Math.abs(p.y) > 700) p.alive = false;
+            });
+
+            projectiles = projectiles.filter(p => p.alive);
+        }
+
+        function drawProjectiles(ctx, scale, cx, cy) {
+            projectiles.forEach(p => {
+                ctx.beginPath();
+                ctx.arc(cx + p.x * scale, cy + p.y * scale, 6 * scale, 0, Math.PI * 2);
+                ctx.fillStyle = p.color;
+                ctx.fill();
+
+                // Trail
+                ctx.beginPath();
+                ctx.moveTo(cx + p.x * scale, cy + p.y * scale);
+                ctx.lineTo(cx + (p.x - p.vx * 0.05) * scale, cy + (p.y - p.vy * 0.05) * scale);
+                ctx.strokeStyle = p.color;
+                ctx.lineWidth = 4 * scale;
+                ctx.stroke();
+            });
+        }
+
+        // === DRAW PLAYER ORB (2.5D with depth) ===
+        function drawPlayerOrb(ctx, p, scale, cx, cy) {
+            const x = cx + p.x * scale;
+            const y = cy + p.y * scale;
+            const r = p.radius * scale * (p.config.hitbox || 1);
+            const hpPct = p.hp / p.maxHp;
+            const speed = Math.sqrt((p.vx || 0) ** 2 + (p.vy || 0) ** 2);
+
+            // === DROP SHADOW (ground contact) ===
+            ctx.beginPath();
+            ctx.ellipse(x, y + r * 0.4, r * 0.8, r * 0.3, 0, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
+            ctx.fill();
+
+            // === MOTION TRAIL ===
+            if (speed > 25) {
+                const trailLen = Math.min(speed * 0.12, 35);
+                ctx.beginPath();
+                ctx.moveTo(x, y);
+                ctx.lineTo(x - ((p.vx || 0) / speed) * trailLen * scale, y - ((p.vy || 0) / speed) * trailLen * scale);
+                ctx.strokeStyle = `${p.config.color}60`;
+                ctx.lineWidth = r * 0.6;
+                ctx.lineCap = 'round';
+                ctx.stroke();
+            }
+
+            // === TEAM RING (crisp, tight) ===
+            ctx.beginPath();
+            ctx.arc(x, y, r + 2, 0, Math.PI * 2);
+            ctx.strokeStyle = TEAM_COLORS[p.team - 1];
+            ctx.lineWidth = 3;
+            ctx.stroke();
+
+            // === SPAWN PROTECTION SHIELD ===
+            if (p.spawnProtection > 0) {
+                ctx.beginPath();
+                ctx.arc(x, y, r + 6, 0, Math.PI * 2);
+                ctx.strokeStyle = `rgba(255, 255, 255, ${Math.min(p.spawnProtection / 3, 0.6)})`;
+                ctx.lineWidth = 2;
+                ctx.stroke();
+            }
+
+            // === 3D SPHERE BASE ===
+            const sphereGrad = ctx.createRadialGradient(
+                x - r * 0.3, y - r * 0.3, 0,  // Light source offset
+                x, y, r
+            );
+            sphereGrad.addColorStop(0, '#3a3a55');
+            sphereGrad.addColorStop(0.7, '#1a1a28');
+            sphereGrad.addColorStop(1, '#0a0a12');
+            ctx.beginPath();
+            ctx.arc(x, y, r, 0, Math.PI * 2);
+            ctx.fillStyle = sphereGrad;
+            ctx.fill();
+
+            // === INTERNAL ENERGY (HP glow) ===
+            const energyRadius = r * (0.3 + hpPct * 0.5);
+            const energyGrad = ctx.createRadialGradient(x, y, 0, x, y, energyRadius);
+            energyGrad.addColorStop(0, `rgba(255, 255, 255, ${0.2 + hpPct * 0.6})`);
+            energyGrad.addColorStop(0.4, p.config.color);
+            energyGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+            ctx.beginPath();
+            ctx.arc(x, y, energyRadius, 0, Math.PI * 2);
+            ctx.fillStyle = energyGrad;
+            ctx.fill();
+
+            // === SPECULAR HIGHLIGHT (3D pop) ===
+            const specGrad = ctx.createRadialGradient(
+                x - r * 0.25, y - r * 0.25, 0,
+                x - r * 0.25, y - r * 0.25, r * 0.5
+            );
+            specGrad.addColorStop(0, 'rgba(255, 255, 255, 0.4)');
+            specGrad.addColorStop(1, 'rgba(255, 255, 255, 0)');
+            ctx.beginPath();
+            ctx.arc(x, y, r, 0, Math.PI * 2);
+            ctx.fillStyle = specGrad;
+            ctx.fill();
+
+            // === DAMAGE CRACKS ===
+            if (hpPct < 0.5) {
+                const crackCount = Math.floor((1 - hpPct) * 5);
+                ctx.strokeStyle = `rgba(255, 80, 40, ${0.4 + (1 - hpPct) * 0.6})`;
+                ctx.lineWidth = 1;
+                for (let c = 0; c < crackCount; c++) {
+                    const angle = (c / crackCount) * Math.PI * 2 + p.id * 0.7;
+                    ctx.beginPath();
+                    ctx.moveTo(x + Math.cos(angle) * r * 0.4, y + Math.sin(angle) * r * 0.4);
+                    ctx.lineTo(x + Math.cos(angle) * r * 0.9, y + Math.sin(angle) * r * 0.9);
+                    ctx.stroke();
+                }
+            }
+
+            // === STATUS INDICATORS (Priority: Execute > Berserk > Bleed > Momentum) ===
+            const time = Date.now() * 0.001;
+            const momentum = p.config.momentum / 40;
+
+            // === BERSERK MODE (Assault <40% HP) - Molten orange-red ===
+            if (p.classKey === 'assault' && hpPct < 0.40) {
+                // Molten glow
+                const berserkPulse = Math.sin(time * 12) * 0.3 + 0.7;
+                ctx.beginPath();
+                ctx.arc(x, y, r + 8, 0, Math.PI * 2);
+                const berserkGrad = ctx.createRadialGradient(x, y, r * 0.5, x, y, r + 10);
+                berserkGrad.addColorStop(0, `rgba(255, 100, 0, ${berserkPulse * 0.8})`);
+                berserkGrad.addColorStop(0.5, `rgba(255, 50, 0, ${berserkPulse * 0.5})`);
+                berserkGrad.addColorStop(1, 'rgba(255, 0, 0, 0)');
+                ctx.fillStyle = berserkGrad;
+                ctx.fill();
+
+                // Violent crack pulses
+                ctx.strokeStyle = `rgba(255, 200, 0, ${berserkPulse})`;
+                ctx.lineWidth = 2;
+                for (let i = 0; i < 5; i++) {
+                    const angle = time * 3 + i * 1.26;
+                    ctx.beginPath();
+                    ctx.moveTo(x + Math.cos(angle) * r * 0.3, y + Math.sin(angle) * r * 0.3);
+                    ctx.lineTo(x + Math.cos(angle) * r * 1.1, y + Math.sin(angle) * r * 1.1);
+                    ctx.stroke();
+                }
+            }
+
+            // === BLEED (Skirmisher debuff) - Crimson fissures ===
+            if (p.bleedTimer > 0) {
+                // Red vapor leak
+                const bleedAlpha = Math.min(p.bleedTimer / 3, 0.7);
+                ctx.beginPath();
+                ctx.arc(x, y, r + 4, 0, Math.PI * 2);
+                ctx.strokeStyle = `rgba(180, 0, 0, ${bleedAlpha})`;
+                ctx.lineWidth = 3;
+                ctx.stroke();
+
+                // Crimson fissures
+                ctx.strokeStyle = `rgba(255, 0, 50, ${bleedAlpha * 0.8})`;
+                ctx.lineWidth = 1.5;
+                for (let i = 0; i < 4; i++) {
+                    const angle = p.id * 0.5 + i * 1.57 + Math.sin(time * 2) * 0.2;
+                    ctx.beginPath();
+                    ctx.moveTo(x + Math.cos(angle) * r * 0.5, y + Math.sin(angle) * r * 0.5);
+                    ctx.quadraticCurveTo(
+                        x + Math.cos(angle + 0.3) * r * 0.8,
+                        y + Math.sin(angle + 0.3) * r * 0.8,
+                        x + Math.cos(angle) * r * 1.05,
+                        y + Math.sin(angle) * r * 1.05
+                    );
+                    ctx.stroke();
+                }
+            }
+
+            // === MOMENTUM OVERDRIVE (high speed) ===
+            if (speed > 150) {
+                const momIntensity = Math.min((speed - 150) / 200, 1);
+
+                // Shock rings
+                ctx.beginPath();
+                ctx.arc(x, y, r + 10 + Math.sin(time * 15) * 3, 0, Math.PI * 2);
+                ctx.strokeStyle = `rgba(100, 200, 255, ${momIntensity * 0.5})`;
+                ctx.lineWidth = 2;
+                ctx.stroke();
+
+                // Speed streaks behind orb
+                const velAngle = Math.atan2(p.vy || 0, p.vx || 0);
+                ctx.strokeStyle = `rgba(150, 220, 255, ${momIntensity * 0.6})`;
+                ctx.lineWidth = 3;
+                for (let i = 0; i < 3; i++) {
+                    const offset = (i - 1) * 0.3;
+                    ctx.beginPath();
+                    ctx.moveTo(x, y);
+                    ctx.lineTo(
+                        x - Math.cos(velAngle + offset) * (20 + speed * 0.1),
+                        y - Math.sin(velAngle + offset) * (20 + speed * 0.1)
+                    );
+                    ctx.stroke();
+                }
+            }
+
+            // === EXECUTE WINDOW (HP <25%) - Death halo + flicker ===
+            if (hpPct < 0.25) {
+                const pulse = Math.sin(time * 12) * 0.3 + 0.7;
+                const flicker = Math.random() > 0.9 ? 0.3 : 1.0;
+
+                // Death halo ring
+                ctx.beginPath();
+                ctx.arc(x, y, r + 12, 0, Math.PI * 2);
+                ctx.strokeStyle = `rgba(255, 255, 255, ${pulse * 0.4 * flicker})`;
+                ctx.lineWidth = 1;
+                ctx.stroke();
+
+                // White-hot fracture lines
+                ctx.strokeStyle = `rgba(255, 255, 200, ${pulse * flicker})`;
+                ctx.lineWidth = 2;
+                for (let i = 0; i < 6; i++) {
+                    const angle = time * 5 + i * 1.05;
+                    ctx.beginPath();
+                    ctx.moveTo(x + Math.cos(angle) * r * 0.2, y + Math.sin(angle) * r * 0.2);
+                    ctx.lineTo(x + Math.cos(angle) * r * 1.0, y + Math.sin(angle) * r * 1.0);
+                    ctx.stroke();
+                }
+
+                // Core flicker
+                ctx.beginPath();
+                ctx.arc(x, y, r * 0.3, 0, Math.PI * 2);
+                ctx.fillStyle = `rgba(255, 50, 50, ${pulse * flicker})`;
+                ctx.fill();
+            }
+
+            // === CLASS ICON ===
+            ctx.font = `bold ${r * 0.85}px Arial`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillStyle = '#fff';
+            ctx.shadowColor = 'rgba(0,0,0,0.8)';
+            ctx.shadowBlur = 3;
+            ctx.shadowOffsetY = 1;
+            ctx.fillText(p.config.emoji, x, y);
+            ctx.shadowBlur = 0;
+            ctx.shadowOffsetY = 0;
+        }
+
+        // === PREDATORY WARFARE AI ===
+        function aiUpdate() {
+            if (gameState !== 'playing') return;
+
+            // BLOOD FRENZY - global wounded detection
+            const bloodTargets = players.filter(e => e.alive && e.hp / e.maxHp < 0.35);
+
+            players.filter(p => p.alive).forEach(p => {
+                const enemies = players.filter(e => e.alive && e.team !== p.team);
+                const allies = players.filter(a => a.alive && a.team === p.team && a !== p);
+                if (enemies.length === 0) return;
+
+                const time = Date.now() * 0.001;
+                const phase = p.id * 2.1;
+                const hpPct = p.hp / p.maxHp;
+                const stats = p.config;
+                const dist = (a, b) => Math.sqrt((a.x - b.x) ** 2 + (a.y - b.y) ** 2);
+
+                // === STAT EXTRACTION ===
+                const momentum = stats.momentum / 40;
+                const execChance = stats.exec;
+
+                // === FORCE 1: PREDATION DRIVE ===
+                // Score each enemy for hunting priority
+                const scoredEnemies = enemies.map(e => {
+                    const eHpPct = e.hp / e.maxHp;
+                    const eAllies = players.filter(a => a.alive && a.team === e.team && a !== e);
+                    const isolated = eAllies.every(a => dist(e, a) > 200);
+
+                    let score = 0;
+                    score += execChance * 2.0;                    // Execute hunger
+                    score += (1 - eHpPct) * 1.5;                  // Wounded bonus
+                    score += isolated ? 2.0 : 0;                  // Isolation bonus
+                    score += momentum * 0.5;                      // Momentum aggression
+
+                    return { enemy: e, score, isolated };
+                });
+                scoredEnemies.sort((a, b) => b.score - a.score);
+
+                // === FORCE 2: ISOLATION HUNGER ===
+                // Seek 1v1 or numerical advantage
+                const isolatedTargets = scoredEnemies.filter(s => s.isolated);
+
+                // === FORCE 3: ANTI-FORMATION REPULSION ===
+                // Penalty for being near allies
+                let cohesionPenalty = 0;
+                let repulseX = 0, repulseY = 0;
+                allies.forEach(a => {
+                    const d = dist(p, a);
+                    if (d < 150) {
+                        cohesionPenalty += 0.8;
+                        const angle = Math.atan2(p.y - a.y, p.x - a.x);
+                        repulseX += Math.cos(angle) * (150 - d) * 0.5;
+                        repulseY += Math.sin(angle) * (150 - d) * 0.5;
+                    }
+                });
+
+                // === FORCE 5: BLOOD FRENZY ===
+                // Anyone below 35% triggers pack hunting
+                let target;
+                const enemyBlood = bloodTargets.filter(b => b.team !== p.team);
+                if (enemyBlood.length > 0) {
+                    // FRENZY - everyone hunts wounded
+                    target = enemyBlood[Math.floor(Math.random() * enemyBlood.length)];
+                } else if (isolatedTargets.length > 0 && Math.random() < 0.7) {
+                    // Hunt isolated
+                    target = isolatedTargets[0].enemy;
+                } else {
+                    // Highest predation score
+                    target = scoredEnemies[0].enemy;
+                }
+
+                const angleToTarget = Math.atan2(target.y - p.y, target.x - p.x);
+                const distToTarget = dist(p, target);
+
+                // === CLASS-SPECIFIC RADICALIZATION ===
+                let moveX = target.x;
+                let moveY = target.y;
+                let allyRepulseMult = 1.0;
+                let isolationMult = 1.0;
+
+                switch (p.classKey) {
+                    case 'assault':
+                        // Team value -60%, isolation +80%
+                        allyRepulseMult = 1.6;
+                        isolationMult = 1.8;
+                        // BERSERK below 40%
+                        if (hpPct < 0.40) {
+                            const berserkAngle = time * 8 + Math.random() * 3;
+                            moveX = target.x + Math.cos(berserkAngle) * 40;
+                            moveY = target.y + Math.sin(berserkAngle) * 40;
+                        } else {
+                            moveX = target.x + (Math.random() - 0.5) * 30;
+                            moveY = target.y + (Math.random() - 0.5) * 30;
+                        }
+                        break;
+
+                    case 'recon':
+                        // Max isolation hunger, constant flanking, drags enemies away
+                        isolationMult = 2.0;
+                        const reconFlank = Math.sin(time * 4 + phase) * 2.5;
+                        const reconDist = 100 + Math.sin(time * 2) * 50;
+                        moveX = target.x + Math.cos(angleToTarget + reconFlank) * reconDist;
+                        moveY = target.y + Math.sin(angleToTarget + reconFlank) * reconDist;
+                        break;
+
+                    case 'skirmisher':
+                        // Ally repulsion DOUBLED, never stays near allies > 3s
+                        allyRepulseMult = 2.5;
+                        // Loops and spirals around combat
+                        const spiralAngle = time * 5 + phase;
+                        const spiralDist = 60 + Math.cos(time * 3) * 50;
+                        moveX = target.x + Math.cos(spiralAngle) * spiralDist;
+                        moveY = target.y + Math.sin(spiralAngle) * spiralDist;
+                        break;
+
+                    case 'support':
+                        // Moderate cohesion allowed, but detaches if allies healthy
+                        allyRepulseMult = 0.5;
+                        const healthyAllies = allies.filter(a => a.hp / a.maxHp > 0.7);
+                        if (healthyAllies.length >= 2) {
+                            // Detach to apply pressure
+                            moveX = target.x + (Math.random() - 0.5) * 100;
+                            moveY = target.y + (Math.random() - 0.5) * 100;
+                        } else {
+                            // Stay mid-range
+                            moveX = target.x - Math.cos(angleToTarget) * 120;
+                            moveY = target.y - Math.sin(angleToTarget) * 120;
+                        }
+                        break;
+
+                    case 'controller':
+                        // Anchors ZONES not teams, abandons allies for territory
+                        allyRepulseMult = 1.2;
+                        // Pick a strategic point between self and target
+                        const zoneX = (p.x + target.x) * 0.4;
+                        const zoneY = (p.y + target.y) * 0.4;
+                        moveX = zoneX + (Math.random() - 0.5) * 80;
+                        moveY = zoneY + (Math.random() - 0.5) * 80;
+                        break;
+                }
+
+                // === FORCE 4: MOMENTUM ADDICTION ===
+                // High momentum = must move or aggression spikes
+                const currentSpeed = Math.sqrt(p.vx * p.vx + p.vy * p.vy);
+                if (currentSpeed < momentum * 200) {
+                    // Too slow! Add chaos
+                    moveX += Math.cos(time * 10 + phase) * 150 * momentum;
+                    moveY += Math.sin(time * 10 + phase) * 150 * momentum;
+                }
+
+                // Apply ally repulsion
+                moveX += repulseX * allyRepulseMult;
+                moveY += repulseY * allyRepulseMult;
+
+                // === RANGE ENFORCEMENT ===
+                // OptimalLow = 0.35 * MaxRange, OptimalHigh = 0.70 * MaxRange
+                const maxRange = R * stats.range;
+                const optimalLow = maxRange * 0.35;
+                const optimalHigh = maxRange * 0.70;
+
+                // If too far: close distance (don't stand and fire)
+                if (distToTarget > optimalHigh) {
+                    const closeAngle = angleToTarget;
+                    moveX = target.x - Math.cos(closeAngle) * optimalHigh * 0.8;
+                    moveY = target.y - Math.sin(closeAngle) * optimalHigh * 0.8;
+                }
+                // If too close: kite outward (except Assault/Skirmisher who commit)
+                else if (distToTarget < optimalLow && p.classKey !== 'assault' && p.classKey !== 'skirmisher') {
+                    const kiteAngle = angleToTarget + Math.PI; // Away from target
+                    moveX = p.x + Math.cos(kiteAngle) * (optimalLow - distToTarget + 50);
+                    moveY = p.y + Math.sin(kiteAngle) * (optimalLow - distToTarget + 50);
+                }
+
+                // Set final target
+                p.targetX = moveX;
+                p.targetY = moveY;
+
+                // === SHOOTING (class range-gated) ===
+                if (p.attackCooldown <= 0 && p.spawnProtection <= 0) {
+                    // Only fire within max range
+                    if (distToTarget < maxRange) {
+                        createProjectile(p, target);
+                        p.attackCooldown = 0.25 + (1 - momentum) * 0.4 + Math.random() * 0.15;
+                    }
+                }
+            });
+        }
+
+        // === ROUND STATE (Full Game Flow) ===
+        function checkRoundState() {
+            const aliveTeams = [...new Set(players.filter(p => p.alive).map(p => p.team))];
+
+            // Victory condition
+            if (aliveTeams.length === 1) {
+                gameState = 'victory';
+                addLog(`🏆 TEAM ${aliveTeams[0]} WINS THE MATCH!`, 'kill');
+                document.getElementById('perkAlert').innerHTML = `
+                    <div style="font-size:2.5rem;color:#ffd700;">🏆 TEAM ${aliveTeams[0]} WINS! 🏆</div>
+                    <div style="font-size:1rem;color:#aaa;margin-top:10px;">+100 XP Winners | +25 XP Participants</div>
+                `;
+                document.getElementById('perkAlert').style.display = 'block';
+                return;
+            }
+
+            // Team eliminated - trigger perk draft
+            if (aliveTeams.length < teamsAliveAtRoundStart && gameState === 'playing') {
+                startPerkDraft();
+            }
+        }
+
+        // === PERK DRAFT ===
+        function startPerkDraft() {
+            gameState = 'perkDraft';
+            perkTimer = 8; // 8 seconds to choose
+
+            // Pick random perks not yet used
+            const availableA = PERKS_A.filter(p => !usedPerks.has(p.id));
+            const availableB = PERKS_B.filter(p => !usedPerks.has(p.id));
+
+            currentPerkA = availableA[Math.floor(Math.random() * availableA.length)] || PERKS_A[0];
+            currentPerkB = availableB[Math.floor(Math.random() * availableB.length)] || PERKS_B[0];
+
+            usedPerks.add(currentPerkA.id);
+            usedPerks.add(currentPerkB.id);
+
+            // Move alive players to replicators
+            players.filter(p => p.alive).forEach(p => {
+                const repPos = getReplicatorPosition(p.team);
+                p.targetX = repPos.x;
+                p.targetY = repPos.y;
+            });
+
+            addLog(`⚡ ROUND ${round} COMPLETE - PERK SELECTION`, 'kill');
+
+            document.getElementById('perkAlert').innerHTML = `
+                <div style="color:#ff6b35;">ROUND ${round} COMPLETE</div>
+                <div style="margin:15px 0;font-size:1.2rem;">Choose your perk:</div>
+                <div style="display:flex;gap:30px;justify-content:center;">
+                    <div style="padding:15px;background:#333;border-radius:8px;border:2px solid #4ecdc4;">
+                        <div style="color:#4ecdc4;">!lbperk1</div>
+                        <div style="font-size:1.2rem;">${currentPerkA.name}</div>
+                        <div style="font-size:0.9rem;color:#888;">${currentPerkA.desc}</div>
+                    </div>
+                    <div style="padding:15px;background:#333;border-radius:8px;border:2px solid #ff6b6b;">
+                        <div style="color:#ff6b6b;">!lbperk2</div>
+                        <div style="font-size:1.2rem;">${currentPerkB.name}</div>
+                        <div style="font-size:0.9rem;color:#888;">${currentPerkB.desc}</div>
+                    </div>
+                </div>
+                <div id="perkCountdown" style="margin-top:15px;font-size:2rem;">8</div>
+            `;
+            document.getElementById('perkAlert').style.display = 'block';
+        }
+
+        function getReplicatorPosition(team) {
+            // Pentagon layout matching spawn positions
+            const radius = 400;
+            const angle = ((team - 1) / 5) * Math.PI * 2 - Math.PI / 2;
+            return {
+                x: Math.cos(angle) * radius,
+                y: Math.sin(angle) * radius
+            };
+        }
+
+        function endPerkDraft() {
+            // Apply default perk (Category A) to players who didn't choose
+            players.filter(p => p.alive && !p.perkChosen).forEach(p => {
+                if (currentPerkA.effect) currentPerkA.effect(p);
+                addLog(`${p.username} got ${currentPerkA.name}`, 'heal');
+            });
+
+            // Reset perk choice flags
+            players.forEach(p => p.perkChosen = false);
+
+            // Start next round
+            round++;
+            teamsAliveAtRoundStart = [...new Set(players.filter(p => p.alive).map(p => p.team))].length;
+
+            // Reset spawn protection
+            players.filter(p => p.alive).forEach(p => {
+                p.spawnProtection = 4;
+                // Return to combat positions
+                p.targetX = p.homeX + (Math.random() - 0.5) * 100;
+                p.targetY = p.homeY + (Math.random() - 0.5) * 100;
+            });
+
+            gameState = 'playing';
+            document.getElementById('perkAlert').style.display = 'none';
+            document.getElementById('roundNum').textContent = round;
+            addLog(`⚔️ ROUND ${round} BEGINS!`, 'kill');
+        }
+
+        // === SECOND CHANCE (Support Trait) ===
+        function trySecondChance(player, attacker) {
+            // Check if Support has Second Chance available
+            if (player.classKey === 'support' && player.hasSecondChance !== false) {
+                // Check if Execute proc'd (bypasses Second Chance)
+                const execChance = attacker.config.exec || 0;
+                if (Math.random() < execChance) {
+                    addLog(`💀 EXECUTED! ${attacker.username} denied ${player.username}'s Second Chance`, 'kill');
+                    return false; // Execute bypasses revival
+                }
+
+                // Second Chance triggers!
+                player.hp = player.maxHp * 0.5;
+                player.hasSecondChance = false;
+                player.spawnProtection = 2;
+                addLog(`✨ SECOND CHANCE! ${player.username} revives at 50% HP`, 'heal');
+                return true; // Player survives
+            }
+            return false;
+        }
+
+        // === UI ===
+        function updateScores() {
+            const teams = {};
+            players.forEach(p => {
+                if (!teams[p.team]) teams[p.team] = { alive: 0, total: 0 };
+                teams[p.team].total++;
+                if (p.alive) teams[p.team].alive++;
+            });
+
+            document.getElementById('teamScores').innerHTML = Object.entries(teams).map(([t, d]) =>
+                `<div class="team-score" style="background:${TEAM_COLORS[t - 1]};color:${t == 2 || t == 3 || t == 5 ? '#000' : '#fff'}">TEAM ${t}: ${d.alive}/${d.total}</div>`
+            ).join('');
+        }
+
+        const logEntries = [];
+        function addLog(text, type) {
+            logEntries.unshift({ text, type, time: Date.now() });
+            if (logEntries.length > 30) logEntries.pop();
+
+            const feedContent = document.getElementById('feedContent');
+            if (feedContent) {
+                feedContent.innerHTML = logEntries.map(l =>
+                    `<div class="feed-entry ${l.type}">${l.text}</div>`
+                ).join('');
+            }
+        }
+
+        // Add chat message to feed (for Twitch integration)
+        function addChatMessage(username, message, platform = 'twitch') {
+            const entry = {
+                text: `<span class="platform">[${platform}]</span> <span class="username">${username}:</span> ${message}`,
+                type: 'chat',
+                time: Date.now()
+            };
+            logEntries.unshift(entry);
+            if (logEntries.length > 30) logEntries.pop();
+
+            const feedContent = document.getElementById('feedContent');
+            if (feedContent) {
+                feedContent.innerHTML = logEntries.map(l =>
+                    `<div class="feed-entry ${l.type}">${l.text}</div>`
+                ).join('');
+            }
+        }
+
+        // === START COMBAT ===
+        function startCombat() {
+            gameState = 'playing';
+            document.getElementById('lobbyUI').style.display = 'none';
+            document.getElementById('overlayHUD').style.display = 'block';
+
+            // Assign spawn positions
+            const teamCount = Math.ceil(players.length / 3);
+            const spawns = getSpawnPositions(teamCount);
+
+            // === APPLY TEAM PASSIVE BONUSES ===
+            // Each class provides their team passive to ALL allies
+            for (let team = 1; team <= teamCount; team++) {
+                const teamPlayers = players.filter(p => p.team === team);
+
+                // Calculate team bonuses from each class on team
+                let teamDR = 0;      // Damage Resistance (Support)
+                let teamCDR = 0;     // Cooldown Reduction (Controller)
+                let teamDmg = 0;     // Damage (Assault)
+                let teamAcc = 0;     // Accuracy (Recon)
+                let teamMom = 0;     // Momentum (Skirmisher)
+
+                teamPlayers.forEach(p => {
+                    if (p.classKey === 'support') teamDR += 0.05;
+                    if (p.classKey === 'controller') teamCDR += 0.05;
+                    if (p.classKey === 'assault') teamDmg += 0.05;
+                    if (p.classKey === 'recon') teamAcc += 0.05;
+                    if (p.classKey === 'skirmisher') teamMom += 10;
+                });
+
+                // Apply bonuses to all team members
+                teamPlayers.forEach(p => {
+                    p.teamDamageResist = teamDR;
+                    p.teamCooldownReduction = teamCDR;
+                    p.teamDamageBonus = teamDmg;
+                    p.teamAccuracyBonus = teamAcc;
+                    p.teamMomentumBonus = teamMom;
+                });
+            }
+
+            players.forEach((p, i) => {
+                const teamIdx = p.team - 1;
+                const posIdx = i % 3;
+                const spawn = spawns[teamIdx]?.[posIdx] || { x: 0, y: 0 };
+                p.x = spawn.x;
+                p.y = spawn.y;
+                p.targetX = spawn.x;
+                p.targetY = spawn.y;
+                p.homeX = spawn.x;
+                p.homeY = spawn.y;
+
+                // Individual Passives
+                if (p.classKey === 'support') p.hasSecondChance = true;
+            });
+
+            teamsAliveAtRoundStart = teamCount;
+            addLog('⚔️ ROUND 1 BEGINS!', 'kill');
+        }
+
+        // === DRAW ARENA (2.5D with depth) ===
+        function drawArena(ctx, scale, cx, cy) {
+            // Background
+            ctx.fillStyle = '#050508';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Floor with radial depth gradient
+            const floorGrad = ctx.createRadialGradient(cx, cy, 0, cx, cy, 600 * scale);
+            floorGrad.addColorStop(0, '#181825');
+            floorGrad.addColorStop(0.7, '#0f0f18');
+            floorGrad.addColorStop(1, '#080810');
+            ctx.fillStyle = floorGrad;
+            ctx.fillRect(cx - 600 * scale, cy - 600 * scale, 1200 * scale, 1200 * scale);
+
+            // Grid lines (subtle)
+            ctx.strokeStyle = 'rgba(60, 60, 90, 0.3)';
+            ctx.lineWidth = 1;
+            for (let i = -600; i <= 600; i += 80) {
+                ctx.beginPath();
+                ctx.moveTo(cx + i * scale, cy - 600 * scale);
+                ctx.lineTo(cx + i * scale, cy + 600 * scale);
+                ctx.stroke();
+                ctx.beginPath();
+                ctx.moveTo(cx - 600 * scale, cy + i * scale);
+                ctx.lineTo(cx + 600 * scale, cy + i * scale);
+                ctx.stroke();
+            }
+
+            // Center crosshair (subtle)
+            ctx.strokeStyle = 'rgba(0, 245, 255, 0.1)';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(cx - 40 * scale, cy);
+            ctx.lineTo(cx + 40 * scale, cy);
+            ctx.moveTo(cx, cy - 40 * scale);
+            ctx.lineTo(cx, cy + 40 * scale);
+            ctx.stroke();
+
+            // Arena border (glowing)
+            ctx.strokeStyle = '#3a3a5a';
+            ctx.lineWidth = 4;
+            ctx.strokeRect(cx - 600 * scale, cy - 600 * scale, 1200 * scale, 1200 * scale);
+        }
+
+        // Draw replicators (only during perk draft)
+        function drawReplicators(ctx, scale, cx, cy) {
+            for (let t = 0; t < 5; t++) {
+                const repPos = getReplicatorPosition(t + 1);
+                const rx = cx + repPos.x * scale;
+                const ry = cy + repPos.y * scale;
+                const size = 30 * scale;
+
+                // Hexagon shape with glow
+                ctx.shadowColor = TEAM_COLORS[t];
+                ctx.shadowBlur = 15;
+                ctx.beginPath();
+                for (let i = 0; i < 6; i++) {
+                    const angle = (i / 6) * Math.PI * 2;
+                    const px = rx + Math.cos(angle) * size;
+                    const py = ry + Math.sin(angle) * size;
+                    if (i === 0) ctx.moveTo(px, py);
+                    else ctx.lineTo(px, py);
+                }
+                ctx.closePath();
+                ctx.fillStyle = `${TEAM_COLORS[t]}30`;
+                ctx.fill();
+                ctx.strokeStyle = TEAM_COLORS[t];
+                ctx.lineWidth = 2;
+                ctx.stroke();
+                ctx.shadowBlur = 0;
+
+                // Replicator icon
+                ctx.font = `${16 * scale}px Arial`;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillStyle = '#fff';
+                ctx.fillText('⚙️', rx, ry);
+            }
+        }
+
+        // === GAME LOOP ===
+        let lastTime = 0;
+
+        function gameLoop(time) {
+            const dt = Math.min((time - lastTime) / 1000, 0.1);
+            lastTime = time;
+
+            const scale = ARENA.scale();
+            const cx = ARENA.centerX();
+            const cy = ARENA.centerY();
+
+            // Clear
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            if (gameState === 'lobby') {
+                // Countdown
+                if (countdown > 0) {
+                    countdown -= dt;
+                    document.getElementById('countdown').textContent = Math.ceil(countdown);
+
+                    if (countdown <= 0) {
+                        startCombat();
+                    }
+                }
+            } else if (gameState === 'perkDraft') {
+                // Perk selection phase
+                drawArena(ctx, scale, cx, cy);
+                drawReplicators(ctx, scale, cx, cy); // Show team stations
+
+                // Update player positions (move to replicators)
+                players.filter(p => p.alive).forEach(p => {
+                    const dx = p.targetX - p.x;
+                    const dy = p.targetY - p.y;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+                    if (dist > 5) {
+                        const speed = 200;
+                        p.x += (dx / dist) * speed * dt;
+                        p.y += (dy / dist) * speed * dt;
+                    }
+                });
+
+                // Draw players during perk draft
+                players.filter(p => p.alive).forEach(p => drawPlayerOrb(ctx, p, scale, cx, cy));
+
+                // Timer countdown
+                perkTimer -= dt;
+                const countdown = document.getElementById('perkCountdown');
+                if (countdown) countdown.textContent = Math.ceil(perkTimer);
+
+                if (perkTimer <= 0) {
+                    endPerkDraft();
+                }
+            } else if (gameState === 'playing' || gameState === 'victory') {
+                drawArena(ctx, scale, cx, cy);
+
+                // Update players
+                players.filter(p => p.alive).forEach(p => {
+                    // Movement (class-specific speeds)
+                    const dx = p.targetX - p.x;
+                    const dy = p.targetY - p.y;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+
+                    if (dist > 3) {
+                        // Class-specific movement speeds
+                        let speed;
+                        switch (p.classKey) {
+                            case 'assault': speed = 250; break;     // FAST - rush in
+                            case 'skirmisher': speed = 220; break;  // FAST - mobile assassin
+                            case 'recon': speed = 160; break;       // Medium - repositioning
+                            case 'support': speed = 140; break;     // Medium - stay with team
+                            case 'controller': speed = 100; break;  // SLOW - anchor
+                            default: speed = 150;
+                        }
+                        p.vx += (dx / dist) * speed * dt;
+                        p.vy += (dy / dist) * speed * dt;
+                    }
+
+                    p.vx *= 0.88;  // Less drag = more momentum
+                    p.vy *= 0.88;
+                    p.x += p.vx * dt;
+                    p.y += p.vy * dt;
+
+                    // Bounds (larger arena)
+                    const bound = 580;
+                    if (Math.abs(p.x) > bound) { p.x = Math.sign(p.x) * bound; p.vx *= -0.5; }
+                    if (Math.abs(p.y) > bound) { p.y = Math.sign(p.y) * bound; p.vy *= -0.5; }
+
+                    // Cooldowns
+                    if (p.attackCooldown > 0) p.attackCooldown -= dt;
+                    if (p.spawnProtection > 0) p.spawnProtection -= dt;
+                });
+
+                // === ORB-TO-ORB COLLISION (momentum-based physics) ===
+                const alivePlayers = players.filter(p => p.alive);
+                for (let i = 0; i < alivePlayers.length; i++) {
+                    for (let j = i + 1; j < alivePlayers.length; j++) {
+                        const a = alivePlayers[i];
+                        const b = alivePlayers[j];
+
+                        const dx = b.x - a.x;
+                        const dy = b.y - a.y;
+                        const dist = Math.sqrt(dx * dx + dy * dy);
+                        const minDist = a.radius + b.radius;
+
+                        if (dist < minDist && dist > 0) {
+                            // Collision detected - separate and apply momentum
+                            const overlap = minDist - dist;
+                            const nx = dx / dist;
+                            const ny = dy / dist;
+
+                            // Momentum-based force (higher momentum = more knockback power)
+                            const aMomentum = 1 + (a.config.momentum / 100);
+                            const bMomentum = 1 + (b.config.momentum / 100);
+                            const totalMomentum = aMomentum + bMomentum;
+
+                            // Separate orbs
+                            a.x -= nx * overlap * (bMomentum / totalMomentum);
+                            a.y -= ny * overlap * (bMomentum / totalMomentum);
+                            b.x += nx * overlap * (aMomentum / totalMomentum);
+                            b.y += ny * overlap * (aMomentum / totalMomentum);
+
+                            // Velocity exchange with momentum factor
+                            const bounce = 60;
+                            a.vx -= nx * bounce * (bMomentum / totalMomentum);
+                            a.vy -= ny * bounce * (bMomentum / totalMomentum);
+                            b.vx += nx * bounce * (aMomentum / totalMomentum);
+                            b.vy += ny * bounce * (aMomentum / totalMomentum);
+                        }
+                    }
+                }
+
+                aiUpdate();
+                updateProjectiles(dt);
+                updateScores();
+
+                // Draw projectiles
+                drawProjectiles(ctx, scale, cx, cy);
+
+                // Draw players
+                players.filter(p => p.alive).forEach(p => drawPlayerOrb(ctx, p, scale, cx, cy));
+            }
+
+            requestAnimationFrame(gameLoop);
+        }
+
+        // === DEMO MODE ===
+        if (new URLSearchParams(window.location.search).get('demo')) {
+            const names = ['Zeus', 'Fooz', 'Yokal', 'Dark', 'Ham', 'Evil', 'Ash', 'Grix', 'Mald', 'Nova', 'Blaze', 'Storm', 'Frost', 'Echo', 'Vex'];
+            let i = 0;
+            const addNext = () => {
+                if (i < 15) {
+                    addPlayer(names[i++]);
+                    setTimeout(addNext, 200);
+                }
+            };
+            setTimeout(addNext, 500);
+        }
+
+        // Start
+        requestAnimationFrame(gameLoop);
+    </script>
+</body>
+
+</html>

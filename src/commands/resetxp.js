@@ -1,7 +1,7 @@
 const XPStorage = require('../utils/xpStorage');
 
 module.exports = {
-    name: 'resetxp',
+    name: 'lbresetxp',
     description: 'Reset a user\'s XP (Mod only)',
     async execute(message, args) {
         const isMod = message.member.permissions.has('ManageMessages') ||

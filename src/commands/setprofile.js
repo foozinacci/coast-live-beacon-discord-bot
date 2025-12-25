@@ -1,7 +1,7 @@
 const UserProfileStorage = require('../utils/userProfileStorage');
 
 module.exports = {
-    name: 'setprofile',
+    name: 'lbsetprofile',
     description: 'Set your social media links',
     async execute(message, args) {
         if (args.length < 2) {

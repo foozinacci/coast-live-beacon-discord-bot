@@ -1,5 +1,5 @@
 module.exports = {
-    name: 'resumemusic',
+    name: 'lbresume',
     description: 'Resume music (Mod only)',
     async execute(message, args) {
         const isMod = message.member.permissions.has('ManageMessages') ||

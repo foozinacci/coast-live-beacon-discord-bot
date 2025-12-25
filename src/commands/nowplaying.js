@@ -1,7 +1,7 @@
 const { EmbedBuilder } = require('discord.js');
 
 module.exports = {
-    name: 'nowplaying',
+    name: 'lbnp',
     description: 'Show current track',
     async execute(message, args) {
         // Get music player from client

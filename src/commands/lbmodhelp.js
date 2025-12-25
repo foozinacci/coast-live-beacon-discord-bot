@@ -1,7 +1,7 @@
 const { EmbedBuilder } = require('discord.js');
 
 module.exports = {
-    name: 'modhelp',
+    name: 'lbmodhelp',
     description: 'Show moderator commands',
     async execute(message, args) {
         const isModerator = message.member.permissions.has('ManageMessages') ||
@@ -9,7 +9,7 @@ module.exports = {
             message.member.permissions.has('Administrator');
 
         if (!isModerator) {
-            return message.reply('❌ Mods only. Use `!help` for public commands.');
+            return message.reply('❌ Mods only. Use `!lbhelp` for public commands.');
         }
 
         const embed = new EmbedBuilder()
@@ -18,42 +18,46 @@ module.exports = {
             .addFields(
                 {
                     name: '📺 Streamers',
-                    value: '`!addstreamer USER`\n' +
-                        '`!addstreamers U1, U2.`\n' +
-                        '`!removestreamer USER`\n' +
-                        '`!stats USER`',
+                    value: '`!lbaddstreamer USER`\n' +
+                        '`!lbaddstreamers U1, U2`\n' +
+                        '`!lbremovestreamer USER`\n' +
+                        '`!lbstats USER`',
                     inline: true
                 },
                 {
                     name: '🎂 Birthdays',
-                    value: '`!addbirthday @USER MM/DD/YYYY`\n' +
-                        '`!removebirthday @USER`',
+                    value: '`!lbaddbday @USER MM/DD`\n' +
+                        '`!lbremovebday @USER`',
                     inline: true
                 },
                 {
                     name: '⭐ XP & Streaks',
-                    value: '`!grantxp @USER 100`\n' +
-                        '`!resetxp @USER`\n' +
-                        '`!freezestreaks on|off`',
+                    value: '`!lbgrantxp @USER 100`\n' +
+                        '`!lbresetxp @USER`\n' +
+                        '`!lbfreezestreaks on|off`',
                     inline: true
                 },
                 {
                     name: '📢 Ads',
-                    value: '`!removead @USER 1|2`',
+                    value: '`!lbremovead @USER 1|2`',
                     inline: true
                 },
                 {
                     name: '🎵 Music',
-                    value: '`!forceskip` • `!pausemusic`\n' +
-                        '`!resumemusic` • `!stop`\n' +
-                        '`!clearqueue confirm`\n' +
-                        '`!removetrack @USER [#]`\n' +
-                        '`!blacklist [URL]`\n' +
-                        '`!musicstatus`',
+                    value: '`!lbforceskip` • `!lbpause`\n' +
+                        '`!lbresume` • `!lbstop`\n' +
+                        '`!lbclearqueue confirm`\n' +
+                        '`!lbremovetrack @USER #`\n' +
+                        '`!lbblacklist [URL]`',
+                    inline: true
+                },
+                {
+                    name: '🃏 Wildcard',
+                    value: '`!lbreset` - Reset game',
                     inline: true
                 }
             )
-            .setFooter({ text: 'Admins: !adminhelp' })
+            .setFooter({ text: 'Admins: !lbadmin' })
             .setTimestamp();
 
         return message.reply({ embeds: [embed] });

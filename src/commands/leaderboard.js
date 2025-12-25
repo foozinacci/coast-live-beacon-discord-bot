@@ -2,7 +2,7 @@ const { EmbedBuilder } = require('discord.js');
 const AnalyticsStorage = require('../utils/analyticsStorage');
 
 module.exports = {
-  name: 'leaderboard',
+  name: 'lbleaderboard',
   description: 'Show streamer leaderboards (Moderator only)',
   async execute(message, args) {
     const isModerator = message.member.permissions.has('ManageMessages') ||
@@ -65,7 +65,7 @@ module.exports = {
         return `${value} streams`;
       } else if (metric === 'totalDuration') {
         const hours = Math.floor(value / 1000 / 60 / 60);
-        return `${hours}h`;
+        return `${hours} h`;
       }
       return value.toString();
     };
@@ -73,7 +73,7 @@ module.exports = {
     const leaderboardText = leaderboard
       .map((entry, i) => {
         const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `${i + 1}.`;
-        return `${medal} **${entry.streamer}** - ${formatValue(metric === 'peak' || metric === 'peakviewers' ? 'peakViewers' : metric === 'avg' || metric === 'avgviewers' ? 'avgPeakViewers' : metric === 'streams' || metric === 'totalstreams' ? 'totalSessions' : 'totalDuration', entry.value)}`;
+        return `${medal} ** ${entry.streamer}** - ${formatValue(metric === 'peak' || metric === 'peakviewers' ? 'peakViewers' : metric === 'avg' || metric === 'avgviewers' ? 'avgPeakViewers' : metric === 'streams' || metric === 'totalstreams' ? 'totalSessions' : 'totalDuration', entry.value)} `;
       })
       .join('\n');
 

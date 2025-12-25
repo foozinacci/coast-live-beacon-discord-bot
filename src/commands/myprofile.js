@@ -2,7 +2,7 @@ const { EmbedBuilder } = require('discord.js');
 const UserProfileStorage = require('../utils/userProfileStorage');
 
 module.exports = {
-    name: 'myprofile',
+    name: 'lbprofile',
     description: 'View your profile and social links',
     async execute(message, args) {
         const storage = new UserProfileStorage();

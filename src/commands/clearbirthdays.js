@@ -1,7 +1,7 @@
 const AnnouncementStorage = require('../utils/announcementStorage');
 
 module.exports = {
-    name: 'clearbirthdays',
+    name: 'lbclearbdays',
     description: 'Clear all birthdays (Admin only)',
     async execute(message, args) {
         // Check admin permissions
