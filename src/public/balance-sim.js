@@ -77,6 +77,8 @@ const stats = {
     matchupWins: {},        // "attacker_vs_defender" -> wins for attacker
     gameDurations: [],      // Ticks per game
     draws: 0,               // Games that timed out
+    // Team composition meta tracking
+    teamComps: {},          // "class1+class2+class3" -> { wins, games, avgPlace }
 };
 
 // Initialize stats
@@ -90,6 +92,11 @@ for (const cls of classKeys) {
 }
 for (let t = 1; t <= TEAM_COUNT; t++) {
     stats.teamWins[t] = 0;
+}
+
+// Helper to get composition key (sorted for consistency)
+function getCompKey(classes) {
+    return classes.slice().sort().join('+');
 }
 
 // === UTILITY ===
@@ -401,10 +408,35 @@ function runGame(teamCount) {
     // Record results
     stats.gameDurations.push(ticks);
 
-    if (aliveTeams.length === 1) {
-        stats.teamWins[aliveTeams[0]]++;
+    // Determine placements
+    const winningTeam = aliveTeams.length === 1 ? aliveTeams[0] : 0;
+
+    if (winningTeam) {
+        stats.teamWins[winningTeam]++;
     } else {
         stats.draws++;
+    }
+
+    // Track team composition meta
+    const uniqueTeams = [...new Set(players.map(p => p.team))];
+    for (const team of uniqueTeams) {
+        const teamPlayers = players.filter(p => p.team === team);
+        const compKey = getCompKey(teamPlayers.map(p => p.classKey));
+
+        if (!stats.teamComps[compKey]) {
+            stats.teamComps[compKey] = { wins: 0, games: 0, totalPlace: 0 };
+        }
+
+        stats.teamComps[compKey].games++;
+
+        if (team === winningTeam) {
+            stats.teamComps[compKey].wins++;
+        }
+
+        // Calculate placement (1 = winner, higher = eliminated earlier)
+        const teamAlive = teamPlayers.some(p => p.alive);
+        const placement = teamAlive ? 1 : (TEAM_COUNT - aliveTeams.length + 1);
+        stats.teamComps[compKey].totalPlace += placement;
     }
 
     // Class stats
@@ -419,7 +451,7 @@ function runGame(teamCount) {
         }
     }
 
-    return aliveTeams.length === 1 ? aliveTeams[0] : 0;
+    return winningTeam;
 }
 
 // === RUN SIMULATIONS ===
@@ -538,4 +570,56 @@ const survivalSpread = maxSurvival - minSurvival;
 const noDominance = survivalSpread < 0.3;
 console.log(`  No Class Dominance: ${noDominance ? '✅ PASS' : '⚠️  WARNING'} (survival spread: ${(survivalSpread * 100).toFixed(1)}%)`);
 
+// === TEAM COMPOSITION META ===
+console.log(`\n🏆 TEAM COMPOSITION META`);
+console.log(`─────────────────────────────────────`);
+
+// Sort comps by win rate
+const compEntries = Object.entries(stats.teamComps)
+    .filter(([k, v]) => v.games >= 10)  // Min 10 games for significance
+    .map(([comp, data]) => ({
+        comp,
+        winRate: data.wins / data.games,
+        avgPlace: data.totalPlace / data.games,
+        games: data.games,
+        wins: data.wins
+    }))
+    .sort((a, b) => b.winRate - a.winRate);
+
+const totalComps = compEntries.length;
+console.log(`  Total unique compositions: ${Object.keys(stats.teamComps).length}`);
+console.log(`  Compositions with 10+ games: ${totalComps}`);
+
+// Class name abbreviations for display
+const abbrev = { support: 'SUP', recon: 'REC', controller: 'CON', assault: 'ASS', skirmisher: 'SKI' };
+
+console.log(`\n  🥇 TOP 10 COMPOSITIONS (highest win rate)`);
+console.log(`  Composition (sorted)    | Games | Wins | Win%  | Avg Place`);
+console.log(`  ------------------------|-------|------|-------|----------`);
+
+for (const entry of compEntries.slice(0, 10)) {
+    const compDisplay = entry.comp.split('+').map(c => abbrev[c] || c.slice(0, 3).toUpperCase()).join('-');
+    const winPct = (entry.winRate * 100).toFixed(1);
+    console.log(`  ${compDisplay.padEnd(22)} | ${entry.games.toString().padStart(5)} | ${entry.wins.toString().padStart(4)} | ${winPct.padStart(5)}% | ${entry.avgPlace.toFixed(2)}`);
+}
+
+console.log(`\n  ❌ BOTTOM 5 COMPOSITIONS (lowest win rate)`);
+console.log(`  Composition (sorted)    | Games | Wins | Win%  | Avg Place`);
+console.log(`  ------------------------|-------|------|-------|----------`);
+
+for (const entry of compEntries.slice(-5).reverse()) {
+    const compDisplay = entry.comp.split('+').map(c => abbrev[c] || c.slice(0, 3).toUpperCase()).join('-');
+    const winPct = (entry.winRate * 100).toFixed(1);
+    console.log(`  ${compDisplay.padEnd(22)} | ${entry.games.toString().padStart(5)} | ${entry.wins.toString().padStart(4)} | ${winPct.padStart(5)}% | ${entry.avgPlace.toFixed(2)}`);
+}
+
+// Check for meta dominance
+const topWinRate = compEntries[0]?.winRate || 0;
+const bottomWinRate = compEntries[compEntries.length - 1]?.winRate || 0;
+const compSpread = topWinRate - bottomWinRate;
+const metaHealthy = compSpread < 0.30;
+
+console.log(`\n  Meta Health: ${metaHealthy ? '✅ BALANCED' : '⚠️  IMBALANCED'} (win rate spread: ${(compSpread * 100).toFixed(1)}%)`);
+
 console.log(`\n`);
+

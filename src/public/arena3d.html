@@ -488,6 +488,48 @@
         border.position.y = 1;
         scene.add(border);
 
+        // === BLEED TRAIL SYSTEM ===
+        // Blood drops on floor that fade over time
+        const bloodTrails = [];
+        const BLOOD_FADE_TIME = 5; // seconds
+        const BLOOD_DROP_INTERVAL = 0.15; // seconds between drops
+
+        function createBloodDrop(x, y) {
+            const size = 4 + Math.random() * 6;
+            const geometry = new THREE.CircleGeometry(size, 8);
+            const material = new THREE.MeshBasicMaterial({
+                color: 0x8b0000, // Dark red
+                transparent: true,
+                opacity: 0.8,
+                side: THREE.DoubleSide
+            });
+            const drop = new THREE.Mesh(geometry, material);
+            drop.rotation.x = -Math.PI / 2;
+            drop.position.set(x + (Math.random() - 0.5) * 10, 0.5, y + (Math.random() - 0.5) * 10);
+            scene.add(drop);
+            bloodTrails.push({
+                mesh: drop,
+                life: BLOOD_FADE_TIME,
+                maxLife: BLOOD_FADE_TIME
+            });
+        }
+
+        function updateBloodTrails(dt) {
+            for (let i = bloodTrails.length - 1; i >= 0; i--) {
+                const trail = bloodTrails[i];
+                trail.life -= dt;
+                // Fade out
+                trail.mesh.material.opacity = 0.8 * (trail.life / trail.maxLife);
+                // Remove when expired
+                if (trail.life <= 0) {
+                    scene.remove(trail.mesh);
+                    trail.mesh.geometry.dispose();
+                    trail.mesh.material.dispose();
+                    bloodTrails.splice(i, 1);
+                }
+            }
+        }
+
         // === ORB CLASS ===
         // Visual size scaling - amplified for clarity
         // Hitbox: Support 1.00, Recon 1.02, Skirmisher 1.03, Controller 1.05, Assault 1.08
@@ -597,9 +639,20 @@
                     shock.rotation.x = -Math.PI / 2;
                     this.statusGroup.add(shock);
                 }
-                // Bleed visual
-                if (p.bleedTimer > 0) this.shell.material.color.setHex(0xcc4444);
-                else this.shell.material.color.setHex(p.config.colorHex);
+                // Bleed visual - drops blood on floor
+                if (p.bleedTimer > 0) {
+                    this.shell.material.color.setHex(0xcc4444);
+                    // Track bleed drop timer
+                    if (!this.bleedDropTimer) this.bleedDropTimer = 0;
+                    this.bleedDropTimer -= dt;
+                    if (this.bleedDropTimer <= 0) {
+                        createBloodDrop(p.x, p.y);
+                        this.bleedDropTimer = BLOOD_DROP_INTERVAL;
+                    }
+                } else {
+                    this.shell.material.color.setHex(p.config.colorHex);
+                    this.bleedDropTimer = 0;
+                }
             }
             destroy() { scene.remove(this.group); scene.remove(this.trail); }
         }
@@ -1270,6 +1323,7 @@
                 updatePhysics(dt);
                 updateProjectiles(dt);
                 orbs.forEach(orb => orb.update(dt));
+                updateBloodTrails(dt);
             }
 
             camera.position.x = Math.sin(now * 0.0002) * 30;
