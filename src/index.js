@@ -229,8 +229,15 @@ const healthServer = http.createServer((req, res) => {
   }
 });
 
+console.log(`🔍 PORT env = "${process.env.PORT}" | Using port: ${apiPort}`);
+
+healthServer.on('error', (err) => {
+  console.error('❌ Health server error:', err.message);
+});
+
 healthServer.listen(apiPort, '0.0.0.0', () => {
   console.log(`🌐 Health server running on http://0.0.0.0:${apiPort}`);
+  console.log('✅ Server is LISTENING and ready for requests');
 });
 
 // Keepalive logging every 5 seconds
