@@ -1411,12 +1411,11 @@
             'assault-recon-skirmisher': 'STORMBRIAR',
             'assault-controller-skirmisher': 'BLIGHTMAW'
         };
-         fun         TeamName(classes) {
-            const key = [...classes].sort().         ;
+        
+            tion getTeamName(classes) {
+            const key = [...classes]         oin('-');
             return TEAM_NAMES[key] || 'UNKNOWN';
-        }
-
-         **
+                   /**
          * Get team colors as array of hex values from class composition
          * Returns [primary, secondary, tertiary] colors for gradients
          */
@@ -1425,7 +1424,9 @@
                 support: 0xffffff,    // White
                 recon: 0x3498db,      // Blue
                 controller: 0x9b59b6, // Purple
-                assault: 0x           /                      skirmisher: 0x2ecc71  //                   };
+                ass        e74c          Red
+                skirmisher: 0x2e         Green
+            };
             return classes.map(c => classColors[c] || 0x888888);
         }
 
@@ -9280,8 +9281,8 @@
             camera.updateProjectionMatrix();
             renderer.setSize(window.innerWidth, window.innerHeight);
             composer.setSize(window.innerWidth, window.innerHeight);
-        });
-    obbyUI();
+     );
+yUI();
         animate();
 
         // Fade in body once everything is ready (prevents FOUC)
