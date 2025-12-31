@@ -192,6 +192,18 @@ client.on(Events.Error, (error) => {
 
 process.on('unhandledRejection', (error) => {
   console.error('Unhandled promise rejection:', error);
+  // Don't crash - keep running
+});
+
+process.on('uncaughtException', (error) => {
+  console.error('Uncaught exception:', error);
+  // Don't crash - keep running
+});
+
+// Ignore SIGTERM for debugging (Railway sends this)
+process.on('SIGTERM', () => {
+  console.log('⚠️ Received SIGTERM - ignoring to debug');
+  // Don't exit - we want to see why Railway is killing us
 });
 
 // === START API SERVER FIRST (before Discord login) ===
