@@ -189,4 +189,35 @@ process.on('unhandledRejection', (error) => {
   console.error('Unhandled promise rejection:', error);
 });
 
+// === START API SERVER FIRST (before Discord login) ===
+// This ensures Railway health checks pass even if Discord login is slow/fails
+try {
+  console.log('🌐 Starting Wildcard Spectator API (pre-login)...');
+  const WildcardAPI = require('./api/wildcardAPI');
+  const apiPort = process.env.PORT || 3005;
+  // Create a minimal API without game engine for now
+  const express = require('express');
+  const http = require('http');
+  const app = express();
+  const server = http.createServer(app);
+
+  // Health check endpoint (must respond fast for Railway)
+  app.get('/health', (req, res) => res.status(200).send('OK'));
+  app.get('/api/health', (req, res) => res.json({ status: 'ok', uptime: process.uptime() }));
+
+  // Serve static files
+  const path = require('path');
+  app.use(express.static(path.join(__dirname, 'public')));
+
+  // Start listening immediately
+  server.listen(apiPort, '0.0.0.0', () => {
+    console.log(`🌐 Pre-login API running on http://0.0.0.0:${apiPort}`);
+  });
+
+  // Store for later upgrade to full API
+  global.preLoginServer = server;
+} catch (err) {
+  console.error('❌ Failed to start pre-login API:', err.message);
+}
+
 client.login(process.env.DISCORD_TOKEN);
