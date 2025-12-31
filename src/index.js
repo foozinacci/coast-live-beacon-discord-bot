@@ -210,23 +210,74 @@ process.on('SIGTERM', () => {
 // === ABSOLUTE MINIMUM HEALTH SERVER (before ANY other code) ===
 // Using raw http - no express, no static, nothing else
 const http = require('http');
+const fs = require('fs');
+const path = require('path');
 const apiPort = process.env.PORT || 3005;
 
+const publicDir = path.join(__dirname, 'public');
 
 const healthServer = http.createServer((req, res) => {
   console.log(`📥 Request: ${req.method} ${req.url}`);
-  if (req.url === '/health' || req.url === '/') {
+
+  // Health check - respond instantly
+  if (req.url === '/health') {
     res.writeHead(200, { 'Content-Type': 'text/plain' });
     res.end('OK');
     console.log('✅ Health check responded OK');
-  } else if (req.url === '/api/health') {
+    return;
+  }
+
+  // API health
+  if (req.url === '/api/health') {
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({ status: 'ok', uptime: process.uptime() }));
-  } else {
-    // Respond OK to any request to avoid Railway thinking we're unhealthy
-    res.writeHead(200, { 'Content-Type': 'text/plain' });
-    res.end('OK - route pending');
+    return;
   }
+
+  // Beacon routes
+  if (req.url === '/beacon' || req.url === '/arena') {
+    const beaconPath = path.join(publicDir, 'beacon.html');
+    fs.readFile(beaconPath, (err, data) => {
+      if (err) {
+        res.writeHead(404);
+        res.end('beacon.html not found');
+        return;
+      }
+      res.writeHead(200, { 'Content-Type': 'text/html' });
+      res.end(data);
+    });
+    return;
+  }
+
+  // Serve static files from public directory
+  let filePath = path.join(publicDir, req.url);
+  fs.readFile(filePath, (err, data) => {
+    if (err) {
+      // Default: return OK for root, 404 for others
+      if (req.url === '/') {
+        res.writeHead(200, { 'Content-Type': 'text/plain' });
+        res.end('Coast Live Beacon Bot - Visit /beacon for the overlay');
+      } else {
+        res.writeHead(404);
+        res.end('Not found');
+      }
+      return;
+    }
+    // Determine content type
+    const ext = path.extname(filePath);
+    const contentTypes = {
+      '.html': 'text/html',
+      '.js': 'application/javascript',
+      '.css': 'text/css',
+      '.png': 'image/png',
+      '.jpg': 'image/jpeg',
+      '.gif': 'image/gif',
+      '.svg': 'image/svg+xml',
+      '.json': 'application/json'
+    };
+    res.writeHead(200, { 'Content-Type': contentTypes[ext] || 'text/plain' });
+    res.end(data);
+  });
 });
 
 console.log(`🔍 PORT env = "${process.env.PORT}" | Using port: ${apiPort}`);
