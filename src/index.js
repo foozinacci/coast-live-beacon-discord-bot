@@ -216,10 +216,33 @@ process.on('uncaughtException', (error) => {
   // Don't crash - keep running
 });
 
-// Ignore SIGTERM for debugging (Railway sends this)
-process.on('SIGTERM', () => {
-  console.log('⚠️ Received SIGTERM - ignoring to debug');
-  // Don't exit - we want to see why Railway is killing us
+// Graceful shutdown on SIGTERM (sent by Render/Railway on redeploy)
+process.on('SIGTERM', async () => {
+  console.log('⚠️ Received SIGTERM - graceful shutdown starting...');
+
+  // Disconnect Discord FIRST so new instance can connect immediately
+  try {
+    console.log('🔌 Disconnecting Discord client...');
+    client.destroy();
+    console.log('✅ Discord client disconnected');
+  } catch (err) {
+    console.error('❌ Error disconnecting Discord:', err.message);
+  }
+
+  // Close WebSocket connections
+  if (global.wss) {
+    console.log('🔌 Closing WebSocket server...');
+    global.wss.close();
+  }
+
+  // Close HTTP server
+  if (global.healthServer) {
+    console.log('🌐 Closing HTTP server...');
+    global.healthServer.close();
+  }
+
+  console.log('👋 Graceful shutdown complete - exiting');
+  process.exit(0);
 });
 
 // === ABSOLUTE MINIMUM HEALTH SERVER (before ANY other code) ===
