@@ -338,11 +338,15 @@ setInterval(() => {
 global.healthServer = healthServer;
 
 // Login to Discord with error handling
+console.log('🔑 Attempting Discord login...');
+console.log(`🔑 Token starts with: ${process.env.DISCORD_TOKEN ? process.env.DISCORD_TOKEN.substring(0, 10) + '...' : 'NOT SET'}`);
+
 client.login(process.env.DISCORD_TOKEN)
   .then(() => {
-    console.log('✅ Discord login initiated');
+    console.log('✅ Discord login initiated successfully');
   })
   .catch(err => {
     console.error('❌ Discord login failed:', err.message);
+    console.error('❌ Full error:', err);
     console.error('⚠️ Bot features disabled, but API still running');
   });
