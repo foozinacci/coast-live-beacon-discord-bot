@@ -372,8 +372,10 @@ class WildcardAPI {
     }
 
     start() {
-        this.server.listen(this.port, () => {
-            console.log(`🌐 Wildcard Spectator API running on http://localhost:${this.port}`);
+        const host = '0.0.0.0'; // Required for Railway/cloud hosting
+        this.server.listen(this.port, host, () => {
+            console.log(`🌐 Wildcard Spectator API running on http://${host}:${this.port}`);
+            console.log(`🌐 PORT env: ${process.env.PORT || 'not set (using default)'}`);
         });
     }
 

@@ -61,18 +61,16 @@ client.once(Events.ClientReady, async (c) => {
   const WildcardGame = require('./services/wildcardGameV2');
   client.wildcardGame = new WildcardGame(client);
 
-  // Start API server after a delay (so bot finishes loading first)
-  setTimeout(() => {
-    try {
-      console.log('🌐 Starting Wildcard Spectator API...');
-      const WildcardAPI = require('./api/wildcardAPI');
-      const apiPort = process.env.PORT || 3005;
-      client.wildcardAPI = new WildcardAPI(client.wildcardGame, apiPort);
-      client.wildcardAPI.start();
-    } catch (err) {
-      console.error('❌ Failed to start Spectator API:', err.message);
-    }
-  }, 3000);
+  // Start API server immediately (Railway needs it fast)
+  try {
+    console.log('🌐 Starting Wildcard Spectator API...');
+    const WildcardAPI = require('./api/wildcardAPI');
+    const apiPort = process.env.PORT || 3005;
+    client.wildcardAPI = new WildcardAPI(client.wildcardGame, apiPort);
+    client.wildcardAPI.start();
+  } catch (err) {
+    console.error('❌ Failed to start Spectator API:', err.message);
+  }
 
   console.log('⭐ XP and streak tracking active');
 
