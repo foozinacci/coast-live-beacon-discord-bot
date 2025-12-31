@@ -250,6 +250,11 @@ class WildcardAPI {
             next();
         });
 
+        // Quick health check for Railway (before static files)
+        this.app.get('/health', (req, res) => {
+            res.status(200).send('OK');
+        });
+
         // Serve static files from public folder
         this.app.use(express.static(path.join(__dirname, '../public')));
 
