@@ -62,8 +62,8 @@ client.once(Events.ClientReady, async (c) => {
   client.wildcardGame = new WildcardGame(client);
 
   // Start API server immediately (Railway needs it fast)
-  // Skip if pre-login server is already running
-  if (!global.preLoginServer) {
+  // Skip if health server is already running (we'll upgrade it later)
+  if (!global.healthServer) {
     try {
       console.log('🌐 Starting Wildcard Spectator API...');
       const WildcardAPI = require('./api/wildcardAPI');
@@ -74,7 +74,8 @@ client.once(Events.ClientReady, async (c) => {
       console.error('❌ Failed to start Spectator API:', err.message);
     }
   } else {
-    console.log('🌐 Pre-login API already running, skipping duplicate startup');
+    console.log('🌐 Health server running, skipping full API for now');
+    // TODO: In production, we'd upgrade the health server to serve static files
   }
 
   console.log('⭐ XP and streak tracking active');
@@ -206,36 +207,31 @@ process.on('SIGTERM', () => {
   // Don't exit - we want to see why Railway is killing us
 });
 
-// === START API SERVER FIRST (before Discord login) ===
-// This ensures Railway health checks pass even if Discord login is slow/fails
-try {
-  console.log('🌐 Starting Wildcard Spectator API (pre-login)...');
-  const WildcardAPI = require('./api/wildcardAPI');
-  const apiPort = process.env.PORT || 3005;
-  // Create a minimal API without game engine for now
-  const express = require('express');
-  const http = require('http');
-  const app = express();
-  const server = http.createServer(app);
+// === ABSOLUTE MINIMUM HEALTH SERVER (before ANY other code) ===
+// Using raw http - no express, no static, nothing else
+const http = require('http');
+const apiPort = process.env.PORT || 3005;
 
-  // Health check endpoint (must respond fast for Railway)
-  app.get('/health', (req, res) => res.status(200).send('OK'));
-  app.get('/api/health', (req, res) => res.json({ status: 'ok', uptime: process.uptime() }));
 
-  // Serve static files
-  const path = require('path');
-  app.use(express.static(path.join(__dirname, 'public')));
+const healthServer = http.createServer((req, res) => {
+  if (req.url === '/health' || req.url === '/') {
+    res.writeHead(200, { 'Content-Type': 'text/plain' });
+    res.end('OK');
+  } else if (req.url === '/api/health') {
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ status: 'ok', uptime: process.uptime() }));
+  } else {
+    // For beacon.html, we'll redirect to static file serving later
+    res.writeHead(404, { 'Content-Type': 'text/plain' });
+    res.end('Starting up...');
+  }
+});
 
-  // Start listening immediately
-  server.listen(apiPort, '0.0.0.0', () => {
-    console.log(`🌐 Pre-login API running on http://0.0.0.0:${apiPort}`);
-  });
+healthServer.listen(apiPort, '0.0.0.0', () => {
+  console.log(`🌐 Health server running on http://0.0.0.0:${apiPort}`);
+});
 
-  // Store for later upgrade to full API
-  global.preLoginServer = server;
-} catch (err) {
-  console.error('❌ Failed to start pre-login API:', err.message);
-}
+global.healthServer = healthServer;
 
 // Login to Discord with error handling
 client.login(process.env.DISCORD_TOKEN)
