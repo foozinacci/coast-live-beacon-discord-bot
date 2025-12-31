@@ -18,6 +18,21 @@ const client = new Client({
   ],
 });
 
+// Debug: Log all Discord client events
+client.on('debug', (info) => {
+  if (info.includes('Heartbeat') || info.includes('Session')) {
+    console.log(`🔍 Discord: ${info.substring(0, 100)}`);
+  }
+});
+
+client.on('warn', (info) => {
+  console.log(`⚠️ Discord Warning: ${info}`);
+});
+
+client.on('error', (error) => {
+  console.error(`❌ Discord Error: ${error.message}`);
+});
+
 client.commands = new Collection();
 const xpStorage = new XPStorage();
 const streakStorage = new StreakStorage();
