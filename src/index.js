@@ -220,4 +220,12 @@ try {
   console.error('❌ Failed to start pre-login API:', err.message);
 }
 
-client.login(process.env.DISCORD_TOKEN);
+// Login to Discord with error handling
+client.login(process.env.DISCORD_TOKEN)
+  .then(() => {
+    console.log('✅ Discord login initiated');
+  })
+  .catch(err => {
+    console.error('❌ Discord login failed:', err.message);
+    console.error('⚠️ Bot features disabled, but API still running');
+  });
