@@ -199,6 +199,45 @@ class TwitchChat {
             case '!lbstats':
                 this.say(guildId, channel, '🃏 WILDCARD: ⚪Support>🟣Controller>🔴Assault>🔵Recon>🟢Skirmisher>⚪ | 3-5 teams of 3 | Classes random | !lbperk1 or !lbperk2 each round (30s) | !lb<class> for stats');
                 break;
+
+            // === BEACON GAME COMMANDS (New Architecture) ===
+            case '!lbg':
+                await this.handleBeaconCommand(cleanChannel, tags, args.slice(1), guildId);
+                break;
+        }
+    }
+
+    // Handle !lbg commands for Beacon game
+    async handleBeaconCommand(channel, tags, args, guildId) {
+        const twitchUser = tags.username;
+        const isAdmin = tags.mod || tags.badges?.broadcaster === '1';
+
+        console.log(`🎮 [BEACON] Command from ${twitchUser}: !lbg ${args.join(' ')} (admin=${isAdmin})`);
+
+        // Get the beacon game from the API
+        const api = this.discordClient.wildcardAPI;
+        if (!api || !api.beaconGame) {
+            console.log('🎮 [BEACON] ERROR: api or beaconGame not available');
+            this.say(guildId, '#' + channel, '❌ Beacon game not available');
+            return;
+        }
+
+        // Reconstruct command: !lbg + args
+        const fullCommand = '!lbg ' + args.join(' ');
+        console.log(`🎮 [BEACON] Processing: ${fullCommand}`);
+
+        const result = api.beaconGame.processCommand(
+            fullCommand,
+            twitchUser,
+            'twitch',
+            isAdmin,
+            guildId
+        );
+
+        console.log(`🎮 [BEACON] Result: ${JSON.stringify(result)}`);
+
+        if (result.handled && result.response) {
+            this.say(guildId, '#' + channel, result.response);
         }
     }
 

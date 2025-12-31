@@ -11,7 +11,7 @@ const SIM_COUNT = parseInt(process.argv[3]) || 1000;
 const PLAYERS_PER_TEAM = 3;
 const R = 900;
 const DT = 0.05; // Simulation timestep (50ms)
-const MAX_TICKS = 2000; // Max ~100 seconds per game
+const MAX_TICKS = 12000; // Max ~10 minutes per game (for ~1 min/team)
 
 // === PENTAGRAM COUNTER SYSTEM ===
 const COUNTERS = {
@@ -22,48 +22,48 @@ const COUNTERS = {
     skirmisher: { counters: ['support', 'assault'], counteredBy: ['controller', 'recon'] }
 };
 
-// === CLASS STATS (ORIGINAL SPEC + FIRE RATES) ===
+// === CLASS STATS (SCALED FOR ~60s PER TEAM ELIMINATION) ===
 const CLASSES = {
     support: {
-        hp: 88, dmg: [35, 38], acc: 0.93, eva: 0.05, exec: 0.00, momentum: 10,
+        hp: 4140, dmg: [35, 38], acc: 0.93, eva: 0.05, exec: 0.00, momentum: 10,
         hitbox: 1.00, range: 0.30, name: 'Support', perks: ['secondChance', 'teamAura'],
         baseAggression: 0.5,
         damageReduction: 0,
-        fireRate: 1.2,
+        fireRate: 2.4,
         projectileSpeed: 500
     },
     recon: {
-        hp: 87, dmg: [45, 55], acc: 0.91, eva: 0.04, exec: 0.16, momentum: 5,
+        hp: 4100, dmg: [45, 55], acc: 0.91, eva: 0.04, exec: 0.16, momentum: 5,
         hitbox: 1.02, range: 1.00, name: 'Recon', perks: ['disrupt', 'precision'],
         baseAggression: 0.65,
         damageReduction: 0,
-        fireRate: 2.5,        // Slow fire (sniper)
-        projectileSpeed: 800  // Fast bullets
+        fireRate: 5.0,
+        projectileSpeed: 800
     },
     controller: {
-        hp: 67, dmg: [30, 35], acc: 0.80, eva: 0.00, exec: 0.05, momentum: 0,
+        hp: 3150, dmg: [30, 35], acc: 0.80, eva: 0.00, exec: 0.05, momentum: 0,
         hitbox: 1.05, range: 0.50, name: 'Controller', perks: ['suppress', 'anchor', 'parry'],
         baseAggression: 0.35,
         damageReduction: 0.15,
         parryChance: 0.75,
         parryReflect: 0.50,
-        fireRate: 1.5,
+        fireRate: 3.0,
         projectileSpeed: 450
     },
     assault: {
-        hp: 89, dmg: [30, 38], acc: 0.95, eva: 0.08, exec: 0.22, momentum: 30,
+        hp: 4190, dmg: [30, 38], acc: 0.95, eva: 0.08, exec: 0.22, momentum: 30,
         hitbox: 1.08, range: 0.50, name: 'Assault', perks: ['rampage', 'execution'],
         baseAggression: 0.95,
         damageReduction: 0,
-        fireRate: 0.8,        // Fast fire
+        fireRate: 1.6,
         projectileSpeed: 550
     },
     skirmisher: {
-        hp: 83, dmg: [20, 28], acc: 0.87, eva: 0.08, exec: 0.05, momentum: 40,
+        hp: 3910, dmg: [20, 28], acc: 0.87, eva: 0.08, exec: 0.05, momentum: 40,
         hitbox: 1.03, range: 0.35, name: 'Skirmisher', perks: ['bleed', 'counter'],
         baseAggression: 0.75,
         damageReduction: 0,
-        fireRate: 0.5,        // Very fast fire
+        fireRate: 1.0,
         projectileSpeed: 600
     }
 };
@@ -374,7 +374,8 @@ function simulateTick(players, projectiles) {
                     }
                 }
             }
-            p.attackCooldown = 0.4;
+            const fireRate = p.config.fireRate || 1.0;
+            p.attackCooldown = fireRate * (0.8 + Math.random() * 0.4);
         }
     });
 

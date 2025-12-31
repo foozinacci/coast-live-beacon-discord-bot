@@ -19,81 +19,125 @@ const GameState = {
 };
 
 // =============================================================================
-// BALANCED CLASS DEFINITIONS (Pentagon System)
+// BALANCED CLASS DEFINITIONS (Synced with Arena3D Simulation)
 // =============================================================================
 const CLASSES = {
     support: {
         name: 'Support',
         emoji: '⚪',
-        hp: 88,
+        color: '#ffffff',
+        hp: 4500,
+        dmg: [120, 150],
         accuracy: 0.93,
         evasion: 0.05,
         execute: 0.00,
         momentum: 10,
         hitbox: 1.00,
+        range: 0.30,
+        fireRate: 2.4,
+        projectileSpeed: 500,
+        weight: 1.2,
+        role: 'Backline',
         description: 'Team sustain specialist with Second Chance respawn',
-        perk1: 'Second Chance - Respawn once at 50% HP when eliminated',
-        perk2: 'Team Aura - Provides pentagon ally bonuses',
+        perk1: 'Second Chance - Respawn once at 50% HP',
+        perk2: 'False Positive - Deploy a decoy that attracts fire',
+        teamBonus: '+5% Damage Resist for team',
         counters: 'Controller, Recon',
         counteredBy: 'Skirmisher, Assault'
+    },
+    recon: {
+        name: 'Recon',
+        emoji: '🔵',
+        color: '#3498db',
+        hp: 4000,
+        dmg: [180, 250],
+        accuracy: 0.91,
+        evasion: 0.04,
+        execute: 0.16,
+        momentum: 5,
+        hitbox: 1.02,
+        range: 1.00,
+        fireRate: 5.0,
+        projectileSpeed: 800,
+        weight: 0.8,
+        role: 'Flank',
+        description: 'Long-range sniper with high burst damage',
+        perk1: 'Disrupt - Stun low-execute targets',
+        perk2: 'Precision - +4% evasion when attacking',
+        teamBonus: '+5% Accuracy for team',
+        counters: 'Controller, Skirmisher',
+        counteredBy: 'Support, Assault'
     },
     controller: {
         name: 'Controller',
         emoji: '🟣',
-        hp: 67,
+        color: '#9b59b6',
+        hp: 5500,
+        dmg: [100, 130],
         accuracy: 0.80,
         evasion: 0.00,
         execute: 0.05,
         momentum: 0,
         hitbox: 1.05,
-        description: 'Area denial expert with momentum suppression',
-        perk1: 'Suppress - Enemies suffer momentum penalty when attacking you',
-        perk2: 'Anchor - Immune to Recon Disruption',
+        range: 0.50,
+        fireRate: 3.0,
+        projectileSpeed: 450,
+        weight: 1.5,
+        role: 'Anchor',
+        damageReduction: 0.15,
+        parryChance: 0.75,
+        parryReflect: 0.50,
+        description: 'Tanky anchor with parry shield and damage reflect',
+        perk1: 'Parry Shield - 75% chance to block, reflect 50% damage',
+        perk2: 'Suppress - Enemies suffer momentum penalty',
+        teamBonus: '+5% Cooldown Reduction for team',
         counters: 'Assault, Skirmisher',
         counteredBy: 'Support, Recon'
     },
     assault: {
         name: 'Assault',
         emoji: '🔴',
-        hp: 89,
+        color: '#e74c3c',
+        hp: 5000,
+        dmg: [140, 180],
         accuracy: 0.95,
         evasion: 0.08,
         execute: 0.22,
         momentum: 30,
         hitbox: 1.08,
-        description: 'Aggressive fighter with high execute chance',
+        range: 0.50,
+        fireRate: 1.6,
+        projectileSpeed: 550,
+        weight: 1.0,
+        role: 'Frontline',
+        description: 'Aggressive bruiser with high execute chance',
         perk1: 'Rampage - +30% damage scaling with momentum',
-        perk2: 'Execution - 22% chance to instant-kill low HP targets',
+        perk2: 'Execution - 22% instant-kill on low HP targets',
+        teamBonus: '+5% Damage for team',
         counters: 'Support, Recon',
         counteredBy: 'Controller, Skirmisher'
-    },
-    recon: {
-        name: 'Recon',
-        emoji: '🔵',
-        hp: 87,
-        accuracy: 0.91,
-        evasion: 0.04,
-        execute: 0.16,
-        momentum: 5,
-        hitbox: 1.02,
-        description: 'Precision specialist with disruption abilities',
-        perk1: 'Disrupt - Chance to stun targets with low execute chance',
-        perk2: 'Precision - Evasion bonus when attacking (-4% to be hit back)',
-        counters: 'Controller, Skirmisher',
-        counteredBy: 'Support, Assault'
     },
     skirmisher: {
         name: 'Skirmisher',
         emoji: '🟢',
-        hp: 83,
+        color: '#2ecc71',
+        hp: 4200,
+        dmg: [90, 120],
         accuracy: 0.87,
         evasion: 0.08,
         execute: 0.05,
         momentum: 40,
         hitbox: 1.03,
-        description: 'High mobility fighter with bleed effects',
+        range: 0.35,
+        fireRate: 1.0,
+        projectileSpeed: 600,
+        weight: 0.7,
+        role: 'Roam',
+        secondLifeHp: 0.30,
+        description: 'Speed demon with rapid attacks and mobility',
         perk1: 'Bleed - Attacks reduce enemy healing by 50%',
-        perk2: 'Counter - +30% damage vs high-accuracy targets (≥0.95)',
+        perk2: 'Blooming Flower - 30% HP respawn on elimination',
+        teamBonus: '+10 Momentum for team',
         counters: 'Support, Assault',
         counteredBy: 'Controller, Recon'
     }
@@ -108,6 +152,23 @@ const PENTAGON = {
     assault: ['support', 'recon'],         // Assault beats Support, Recon
     recon: ['controller', 'skirmisher'],   // Recon beats Controller, Skirmisher
     skirmisher: ['support', 'assault']     // Skirmisher beats Support, Assault
+};
+
+// =============================================================================
+// TEAM NAMES (Based on class composition - MTG color wheel inspired)
+// Key format: sorted classes joined by '-'
+// =============================================================================
+const TEAM_NAMES = {
+    'controller-recon-support': 'SPECTRALS',      // W/U/B
+    'assault-recon-support': 'FLASHPOINT',        // W/U/R
+    'recon-skirmisher-support': 'BLOOMTIDE',      // W/U/G
+    'assault-controller-support': 'CINDERVOW',    // W/B/R
+    'controller-skirmisher-support': 'HOLLOWROOT', // W/B/G
+    'assault-skirmisher-support': 'BLAZEWILD',    // W/R/G
+    'assault-controller-recon': 'VENOMFLARE',     // U/B/R
+    'controller-recon-skirmisher': 'MURKVINE',    // U/B/G
+    'assault-recon-skirmisher': 'STORMBRIAR',     // U/R/G
+    'assault-controller-skirmisher': 'BLIGHTMAW'  // B/R/G
 };
 
 // =============================================================================
@@ -190,6 +251,100 @@ class WildcardGame {
         this.client = discordClient;
         this.games = new Map(); // guildId -> gameState
         this.xpStorage = new XPStorage();
+
+        // Global player tracking - prevents joining multiple games across servers
+        this.activePlayers = new Map(); // discordId/twitchUsername -> guildId
+
+        // Daily game cap tracking: { odiscordId: { date: 'YYYY-MM-DD', count: N } }
+        this.dailyPlays = new Map();
+        this.DAILY_CAP = 3; // Max games per day (configurable)
+    }
+
+    /**
+     * Get today's date string for tracking
+     */
+    getTodayKey() {
+        return new Date().toISOString().split('T')[0]; // 'YYYY-MM-DD'
+    }
+
+    /**
+     * Check if player has reached daily cap
+     */
+    getDailyPlays(playerId) {
+        const today = this.getTodayKey();
+        const data = this.dailyPlays.get(playerId);
+
+        if (!data || data.date !== today) {
+            return 0;
+        }
+        return data.count;
+    }
+
+    /**
+     * Increment daily play count
+     */
+    incrementDailyPlays(playerId) {
+        const today = this.getTodayKey();
+        const data = this.dailyPlays.get(playerId);
+
+        if (!data || data.date !== today) {
+            this.dailyPlays.set(playerId, { date: today, count: 1 });
+        } else {
+            data.count++;
+        }
+    }
+
+    /**
+     * Check if today is player's birthday (uses bot's birthday service)
+     */
+    async isBirthday(guildId, userId) {
+        try {
+            const BirthdayStorage = require('../utils/birthdayStorage');
+            const storage = new BirthdayStorage();
+            const birthdays = storage.getToday(guildId);
+            return birthdays.some(b => b.userId === userId);
+        } catch (e) {
+            return false;
+        }
+    }
+
+    /**
+     * Check if a player is already in a game anywhere
+     */
+    isPlayerInActiveGame(playerId) {
+        return this.activePlayers.has(playerId);
+    }
+
+    /**
+     * Get which guild a player is currently playing in
+     */
+    getPlayerActiveGuild(playerId) {
+        return this.activePlayers.get(playerId);
+    }
+
+    /**
+     * Register a player as active in a game
+     */
+    registerActivePlayer(playerId, guildId) {
+        this.activePlayers.set(playerId, guildId);
+    }
+
+    /**
+     * Remove a player from active tracking
+     */
+    unregisterActivePlayer(playerId) {
+        this.activePlayers.delete(playerId);
+    }
+
+    /**
+     * Clear all active players for a guild (game ended)
+     */
+    clearActivePlayersForGuild(guildId) {
+        for (const [playerId, guild] of this.activePlayers) {
+            if (guild === guildId) {
+                this.activePlayers.delete(playerId);
+            }
+        }
     }
 
     // Get or create game state for a guild
@@ -230,52 +385,126 @@ class WildcardGame {
     // CLASS ASSIGNMENT LOGIC
     // =============================================================================
 
-    // Generate random compositions with constraints
+    /**
+     * Get a normalized key for team composition (sorted for comparison)
+     */
+    getCompositionKey(classes) {
+        return [...classes].sort().join('-');
+    }
+
+    /**
+     * Get the thematic team name based on class composition
+     */
+    getTeamName(classes) {
+        const key = this.getCompositionKey(classes);
+        return TEAM_NAMES[key] || `Team ${key}`;
+    }
+
+    /**
+     * Generate random compositions with strict constraints:
+     * 1. No duplicate classes on same team
+     * 2. Max 3 of any class across entire lobby  
+     * 3. No duplicate team compositions (unique combos required)
+     */
     generateRandomCompositions(numTeams) {
-        const allClasses = CLASS_KEYS;
+        const allClasses = CLASS_KEYS; // ['support', 'recon', 'controller', 'assault', 'skirmisher']
         const globalClassCount = {};
         allClasses.forEach(c => globalClassCount[c] = 0);
 
-        const compositions = Array.from({ length: numTeams }, () => []);
+        const usedCompositions = new Set(); // Track used team combos
+        const compositions = [];
+
+        const MAX_ATTEMPTS = 100; // Prevent infinite loops
 
         for (let teamIndex = 0; teamIndex < numTeams; teamIndex++) {
-            const usedOnTeam = new Set();
+            let teamComp = null;
+            let attempts = 0;
 
-            for (let slot = 0; slot < 3; slot++) {
-                let available = allClasses.filter(c =>
-                    !usedOnTeam.has(c) && globalClassCount[c] < 3
-                );
+            while (!teamComp && attempts < MAX_ATTEMPTS) {
+                attempts++;
+                const candidate = this.generateSingleTeamComp(allClasses, globalClassCount);
 
-                // 3-team mode: prevent Support+Skirmisher combo
-                if (numTeams === 3) {
-                    if (usedOnTeam.has('support')) {
-                        available = available.filter(c => c !== 'skirmisher');
-                    }
-                    if (usedOnTeam.has('skirmisher')) {
-                        available = available.filter(c => c !== 'support');
-                    }
+                if (!candidate) continue;
+
+                const compKey = this.getCompositionKey(candidate);
+
+                // Check if this exact composition is already used
+                if (usedCompositions.has(compKey)) {
+                    continue; // Try again - duplicate team combo
                 }
 
-                if (available.length === 0) {
-                    let fallback = allClasses.filter(c => !usedOnTeam.has(c));
-                    if (numTeams === 3) {
-                        if (usedOnTeam.has('support')) fallback = fallback.filter(c => c !== 'skirmisher');
-                        if (usedOnTeam.has('skirmisher')) fallback = fallback.filter(c => c !== 'support');
-                    }
-                    const classKey = fallback[Math.floor(Math.random() * fallback.length)] || allClasses[0];
-                    compositions[teamIndex].push(classKey);
-                    usedOnTeam.add(classKey);
-                    globalClassCount[classKey]++;
-                } else {
-                    const classKey = available[Math.floor(Math.random() * available.length)];
-                    compositions[teamIndex].push(classKey);
-                    usedOnTeam.add(classKey);
-                    globalClassCount[classKey]++;
+                // Valid composition found
+                teamComp = candidate;
+                usedCompositions.add(compKey);
+
+                // Update global counts
+                for (const cls of teamComp) {
+                    globalClassCount[cls]++;
                 }
             }
+
+            if (!teamComp) {
+                // Fallback if we can't find unique - use any valid team
+                console.warn(`[Wildcard] Could not generate unique team ${teamIndex + 1}, using fallback`);
+                teamComp = this.generateFallbackTeam(allClasses, globalClassCount);
+                for (const cls of teamComp) {
+                    globalClassCount[cls]++;
+                }
+            }
+
+            compositions.push(teamComp);
         }
 
         return compositions;
+    }
+
+    /**
+     * Generate a single valid team composition
+     * Rules: 3 unique classes, each class max 3 globally
+     */
+    generateSingleTeamComp(allClasses, globalClassCount) {
+        const team = [];
+        const usedOnTeam = new Set();
+
+        for (let slot = 0; slot < 3; slot++) {
+            // Get available classes (not on team yet, not at global max)
+            const available = allClasses.filter(c =>
+                !usedOnTeam.has(c) && globalClassCount[c] < 3
+            );
+
+            if (available.length === 0) {
+                return null; // Can't complete this team
+            }
+
+            // Random selection
+            const classKey = available[Math.floor(Math.random() * available.length)];
+            team.push(classKey);
+            usedOnTeam.add(classKey);
+        }
+
+        return team;
+    }
+
+    /**
+     * Fallback team generation (less strict)
+     */
+    generateFallbackTeam(allClasses, globalClassCount) {
+        const team = [];
+        const usedOnTeam = new Set();
+
+        for (let slot = 0; slot < 3; slot++) {
+            let available = allClasses.filter(c => !usedOnTeam.has(c));
+
+            if (available.length === 0) {
+                available = allClasses; // Last resort
+            }
+
+            const classKey = available[Math.floor(Math.random() * available.length)];
+            team.push(classKey);
+            usedOnTeam.add(classKey);
+        }
+
+        return team;
     }
 
     // =============================================================================
@@ -467,8 +696,16 @@ class WildcardGame {
         game.discordChannelId = channelId;
     }
 
-    join(guildId, userId, username, platform = 'discord') {
+    async join(guildId, userId, username, platform = 'discord') {
         const game = this.getGame(guildId);
+
+        // Check if player is in a game anywhere (global check)
+        if (this.isPlayerInActiveGame(userId)) {
+            const activeGuild = this.getPlayerActiveGuild(userId);
+            if (activeGuild !== guildId) {
+                return { success: false, error: "You're already in a game in another server! Finish that game first." };
+            }
+        }
 
         if (game.players.has(userId)) {
             return { success: false, error: "You're already in the game!" };
@@ -481,6 +718,18 @@ class WildcardGame {
         if (game.players.size >= game.maxPlayers) {
             return { success: false, error: 'Game is full!' };
         }
+
+        // Daily cap check (birthday bypass)
+        const dailyPlays = this.getDailyPlays(userId);
+        const hasBirthday = await this.isBirthday(guildId, userId);
+
+        if (dailyPlays >= this.DAILY_CAP && !hasBirthday) {
+            return { success: false, error: `You've reached your daily limit of ${this.DAILY_CAP} games! Come back tomorrow. 🎮` };
+        }
+
+        // Register player as active globally and increment daily count
+        this.registerActivePlayer(userId, guildId);
+        this.incrementDailyPlays(userId);
 
         // Add player (class assigned at game start)
         game.players.set(userId, {
@@ -549,6 +798,85 @@ class WildcardGame {
         game.lobbyCountdownActive = false;
     }
 
+    /**
+     * Fill lobby with bots to complete teams then start
+     * Team targets: 9 (3 teams), 12 (4 teams), 15 (5 teams)
+     */
+    startFill(guildId) {
+        const game = this.getGame(guildId);
+
+        if (game.state !== GameState.IDLE && game.state !== GameState.LOBBY) {
+            return { success: false, error: 'Game already in progress!' };
+        }
+
+        const currentPlayers = game.players.size;
+
+        // Determine target player count (fills to complete teams)
+        let targetCount;
+        if (currentPlayers <= 9) {
+            targetCount = 9;  // 3 teams
+        } else if (currentPlayers <= 12) {
+            targetCount = 12; // 4 teams
+        } else {
+            targetCount = 15; // 5 teams
+        }
+
+        const botsNeeded = targetCount - currentPlayers;
+        const botsAdded = [];
+
+        // Add bots
+        for (let i = 1; i <= botsNeeded; i++) {
+            const botId = `bot_${Date.now()}_${i}`;
+            const botName = `Bot #${i}`;
+
+            // Determine team (interleaved assignment)
+            const numTeams = Math.ceil(targetCount / 3);
+            const currentIndex = currentPlayers + i - 1;
+            let team;
+            if (currentIndex < 9) {
+                team = (currentIndex % 3) + 1;
+            } else if (currentIndex < 12) {
+                team = 4;
+            } else {
+                team = 5;
+            }
+
+            game.players.set(botId, {
+                userId: botId,
+                username: botName,
+                platform: 'bot',
+                team: null,
+                classKey: null,
+                hp: 100,
+                maxHp: 100,
+                alive: true,
+                perks: [],
+                damage: 0,
+                kills: 0,
+                roundsSurvived: 0,
+                isBot: true
+            });
+
+            botsAdded.push(botName);
+        }
+
+        // Update state to lobby if needed
+        if (game.state === GameState.IDLE) {
+            game.state = GameState.LOBBY;
+        }
+
+        // Start the game
+        const result = this.startGame(guildId);
+
+        return {
+            success: true,
+            botsAdded: botsAdded.length,
+            botNames: botsAdded,
+            totalPlayers: game.players.size,
+            ...result
+        };
+    }
+
     autoStartGame(guildId) {
         const game = this.getGame(guildId);
         if (game.state !== GameState.LOBBY) return;
@@ -575,12 +903,12 @@ class WildcardGame {
         // Generate random class compositions with constraints
         const compositions = this.generateRandomCompositions(numTeams);
 
-        // Create teams
+        // Create teams with thematic names
         game.teams = [];
         for (let i = 0; i < numTeams; i++) {
             game.teams.push({
                 id: i + 1,
-                name: `Team ${i + 1}`,
+                name: this.getTeamName(compositions[i]), // Thematic name based on composition
                 players: [],
                 alive: true,
                 anchoredClasses: compositions[i] // Store initial composition
@@ -589,21 +917,50 @@ class WildcardGame {
 
         // Assign players to teams in seat order: 123123123 444 555
         const playerArray = Array.from(game.players.values());
+
+        // Get preferred classes from accountLinker
+        const getPreferred = (userId) => {
+            try {
+                return this.client?.accountLinker?.getPreferredClass(userId) || null;
+            } catch (e) {
+                return null;
+            }
+        };
+
+        // Helper to assign player to team with preference support
+        const assignPlayerToTeam = (player, teamIndex, availableClasses) => {
+            const preferredClass = getPreferred(player.userId);
+            let assignedClass = null;
+
+            // Try to assign preferred class if available
+            if (preferredClass && availableClasses.includes(preferredClass)) {
+                assignedClass = preferredClass;
+                availableClasses.splice(availableClasses.indexOf(preferredClass), 1);
+            } else {
+                // Take first available
+                assignedClass = availableClasses.shift() || 'support';
+            }
+
+            player.team = teamIndex + 1;
+            player.classKey = assignedClass;
+            player.hp = CLASSES[player.classKey].hp;
+            player.maxHp = CLASSES[player.classKey].hp;
+            player.gotPreferred = assignedClass === preferredClass;
+
+            game.teams[teamIndex].players.push(player.userId);
+            game.players.set(player.userId, player);
+        };
+
+        // Track remaining classes per team
+        const teamAvailableClasses = compositions.map(comp => [...comp]); // Clone
         let playerIndex = 0;
 
         // First 9 players: interleaved 123123123
         for (let slot = 0; slot < 9 && playerIndex < playerArray.length; slot++) {
             const teamIndex = slot % Math.min(3, numTeams);
             const player = playerArray[playerIndex];
-            const classIndex = game.teams[teamIndex].players.length;
 
-            player.team = teamIndex + 1;
-            player.classKey = compositions[teamIndex][classIndex] || 'support';
-            player.hp = CLASSES[player.classKey].hp;
-            player.maxHp = CLASSES[player.classKey].hp;
-
-            game.teams[teamIndex].players.push(player.userId);
-            game.players.set(player.userId, player);
+            assignPlayerToTeam(player, teamIndex, teamAvailableClasses[teamIndex]);
             playerIndex++;
         }
 
@@ -612,13 +969,7 @@ class WildcardGame {
             for (let slot = 0; slot < 3 && playerIndex < playerArray.length; slot++) {
                 const player = playerArray[playerIndex];
 
-                player.team = teamIndex + 1;
-                player.classKey = compositions[teamIndex][slot] || 'support';
-                player.hp = CLASSES[player.classKey].hp;
-                player.maxHp = CLASSES[player.classKey].hp;
-
-                game.teams[teamIndex].players.push(player.userId);
-                game.players.set(player.userId, player);
+                assignPlayerToTeam(player, teamIndex, teamAvailableClasses[teamIndex]);
                 playerIndex++;
             }
         }
@@ -791,14 +1142,8 @@ class WildcardGame {
         const result = this.simulateRound(guildId);
 
         if (result.finished) {
-            // Game over
-            const embed = new EmbedBuilder()
-                .setColor('#00FF00')
-                .setTitle('🏆 WILDCARD - GAME OVER!')
-                .setDescription(`**Team ${result.winner.id}** WINS!\n\n${result.events.join('\n')}`)
-                .setTimestamp();
-
-            await this.broadcastToDiscord(guildId, embed);
+            // Game over - send detailed winner report
+            await this.sendWinnerReport(guildId, result.winner);
             this.awardXP(guildId, result.winner);
             this.reset(guildId);
         } else {
@@ -873,28 +1218,48 @@ class WildcardGame {
                     game.secondChanceUsed.add(defender.userId);
                     defender.hp = Math.round(defender.maxHp * 0.50);
                     defender.alive = true;
+                    defender.respawns = (defender.respawns || 0) + 1;
                     events.push(`💫 ${defender.username} used SECOND CHANCE! (50% HP)`);
                 } else if (hasSecondChance) {
                     defender.hp = Math.round(defender.maxHp * 0.25);
                     defender.alive = true;
+                    defender.respawns = (defender.respawns || 0) + 1;
                     events.push(`💫 ${defender.username} respawned at 25% HP!`);
                 } else {
                     defender.alive = false;
+                    defender.killedBy = attacker.username;
+                    defender.killedByClass = attacker.classKey;
+                    defender.deaths = (defender.deaths || 0) + 1;
                     attacker.kills++;
+
+                    // Track victim for nemesis system
+                    if (!attacker.victims) attacker.victims = [];
+                    attacker.victims.push(defender.userId);
+
                     events.push(`💀 ${defender.username} eliminated by ${attacker.username}!`);
                 }
             }
         }
 
-        // Update team status
+        // Update team status and track eliminations
+        const remainingTeamCount = game.teams.filter(t => t.alive).length;
+
         for (const team of game.teams) {
             const aliveInTeam = team.players.filter(pid => {
                 const p = game.players.get(pid);
                 return p && p.alive;
             });
+
+            const wasAlive = team.alive;
             team.alive = aliveInTeam.length > 0;
-            if (!team.alive && !events.includes(`☠️ Team ${team.id} ELIMINATED!`)) {
-                events.push(`☠️ Team ${team.id} ELIMINATED!`);
+
+            // Team just got eliminated - generate report
+            if (wasAlive && !team.alive) {
+                team.placement = remainingTeamCount + 1; // They placed based on remaining teams
+                events.push(`☠️ **${team.name}** ELIMINATED! (${this.getPlacementText(team.placement)})`);
+
+                // Schedule detailed report (async)
+                this.sendEliminationReport(guildId, team);
             }
         }
 
@@ -905,6 +1270,165 @@ class WildcardGame {
         }
 
         return { events, finished: false };
+    }
+
+    // =============================================================================
+    // ELIMINATION REPORTS
+    // =============================================================================
+
+    getPlacementText(placement) {
+        const suffixes = { 1: 'st', 2: 'nd', 3: 'rd' };
+        const suffix = suffixes[placement] || 'th';
+        return `${placement}${suffix} Place`;
+    }
+
+    async sendEliminationReport(guildId, team) {
+        const game = this.getGame(guildId);
+        const totalTeams = game.teams.length;
+
+        // Build player stats
+        const playerStats = team.players.map(pid => {
+            const p = game.players.get(pid);
+            if (!p) return null;
+
+            const cls = CLASSES[p.classKey];
+            return {
+                username: p.username,
+                platform: p.platform,
+                classKey: p.classKey,
+                classEmoji: cls?.emoji || '❓',
+                className: cls?.name || p.classKey,
+                damage: p.damage || 0,
+                kills: p.kills || 0,
+                deaths: p.deaths || 0,
+                respawns: p.respawns || 0,
+                killedBy: p.killedBy || 'Ring-out',
+                killedByClass: p.killedByClass || null,
+                roundsSurvived: p.roundsSurvived || 0,
+                victims: p.victims || []
+            };
+        }).filter(Boolean);
+
+        // Create embed
+        const embed = new EmbedBuilder()
+            .setColor('#FF4444')
+            .setTitle(`☠️ ${team.name} ELIMINATED!`)
+            .setDescription(`**${this.getPlacementText(team.placement)}** of ${totalTeams} teams`)
+            .setTimestamp();
+
+        // Add player stats
+        for (const p of playerStats) {
+            const killerInfo = p.killedByClass
+                ? `${CLASSES[p.killedByClass]?.emoji || ''} ${p.killedBy}`
+                : p.killedBy;
+
+            embed.addFields({
+                name: `${p.classEmoji} ${p.username} (${p.className})`,
+                value: `⚔️ ${p.kills} kills | 💀 Died to: ${killerInfo}\n📊 ${p.damage.toLocaleString()} dmg | 💫 ${p.respawns} respawns | 🔄 ${p.roundsSurvived} rounds`,
+                inline: false
+            });
+        }
+
+        // Send to Discord channel
+        await this.broadcastToDiscord(guildId, embed);
+
+        // Send to Twitch
+        const twitchMsg = `☠️ ${team.name} eliminated! (${this.getPlacementText(team.placement)}) - ` +
+            playerStats.map(p => `${p.username}: ${p.kills}K/${p.deaths}D`).join(' | ');
+        this.broadcastToTwitch(guildId, twitchMsg);
+
+        // Update player stats in accountLinker
+        if (this.client?.accountLinker) {
+            for (const p of playerStats) {
+                const player = game.players.get(team.players.find(pid => game.players.get(pid)?.username === p.username));
+                if (player) {
+                    this.client.accountLinker.updateStats(player.userId, null, {
+                        won: false,
+                        classKey: p.classKey,
+                        kills: p.kills,
+                        deaths: p.deaths,
+                        damage: p.damage,
+                        respawns: p.respawns,
+                        killedBy: p.killedBy,
+                        victims: p.victims
+                    });
+                }
+            }
+        }
+    }
+
+    async sendWinnerReport(guildId, winningTeam) {
+        const game = this.getGame(guildId);
+        const totalTeams = game.teams.length;
+
+        // Build player stats
+        const playerStats = winningTeam.players.map(pid => {
+            const p = game.players.get(pid);
+            if (!p) return null;
+
+            const cls = CLASSES[p.classKey];
+            return {
+                username: p.username,
+                platform: p.platform,
+                classKey: p.classKey,
+                classEmoji: cls?.emoji || '❓',
+                className: cls?.name || p.classKey,
+                damage: p.damage || 0,
+                kills: p.kills || 0,
+                deaths: p.deaths || 0,
+                respawns: p.respawns || 0,
+                roundsSurvived: p.roundsSurvived || 0,
+                victims: p.victims || []
+            };
+        }).filter(Boolean);
+
+        // Create embed
+        const embed = new EmbedBuilder()
+            .setColor('#FFD700')
+            .setTitle(`🏆 ${winningTeam.name} WINS!`)
+            .setDescription(`**CHAMPION** after ${game.round} rounds!`)
+            .setTimestamp();
+
+        // Add player stats
+        for (const p of playerStats) {
+            embed.addFields({
+                name: `${p.classEmoji} ${p.username} (${p.className})`,
+                value: `⚔️ ${p.kills} kills | 📊 ${p.damage.toLocaleString()} dmg | 💫 ${p.respawns} respawns`,
+                inline: false
+            });
+        }
+
+        // MVP calculation
+        const mvp = playerStats.reduce((best, p) =>
+            (p.kills + p.damage / 100) > (best.kills + best.damage / 100) ? p : best
+        );
+        embed.addFields({ name: '⭐ MVP', value: `${mvp.classEmoji} ${mvp.username}` });
+
+        // Send to Discord
+        await this.broadcastToDiscord(guildId, embed);
+
+        // Send to Twitch
+        const twitchMsg = `🏆 ${winningTeam.name} WINS! MVP: ${mvp.username} (${mvp.kills}K) - ` +
+            playerStats.map(p => `${p.username}: ${p.kills}K`).join(' | ');
+        this.broadcastToTwitch(guildId, twitchMsg);
+
+        // Update winner stats in accountLinker
+        if (this.client?.accountLinker) {
+            for (const p of playerStats) {
+                const player = game.players.get(winningTeam.players.find(pid => game.players.get(pid)?.username === p.username));
+                if (player) {
+                    this.client.accountLinker.updateStats(player.userId, null, {
+                        won: true,
+                        classKey: p.classKey,
+                        kills: p.kills,
+                        deaths: p.deaths,
+                        damage: p.damage,
+                        respawns: p.respawns,
+                        victims: p.victims
+                    });
+                }
+            }
+        }
     }
 
     // =============================================================================
@@ -959,6 +1483,9 @@ class WildcardGame {
         game.matchKills.clear();
         if (game.perkTimer) clearTimeout(game.perkTimer);
         if (game.lobbyTimer) clearTimeout(game.lobbyTimer);
+
+        // Clear active player tracking for this guild
+        this.clearActivePlayersForGuild(guildId);
     }
 
     leave(guildId, userId) {
@@ -974,6 +1501,9 @@ class WildcardGame {
 
         const player = game.players.get(userId);
         game.players.delete(userId);
+
+        // Remove from global active tracking
+        this.unregisterActivePlayer(userId);
 
         if (game.players.size === 0) {
             game.state = GameState.IDLE;

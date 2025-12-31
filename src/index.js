@@ -66,7 +66,8 @@ client.once(Events.ClientReady, async (c) => {
     try {
       console.log('🌐 Starting Wildcard Spectator API...');
       const WildcardAPI = require('./api/wildcardAPI');
-      client.wildcardAPI = new WildcardAPI(client.wildcardGame, 3005);
+      const apiPort = process.env.PORT || 3005;
+      client.wildcardAPI = new WildcardAPI(client.wildcardGame, apiPort);
       client.wildcardAPI.start();
     } catch (err) {
       console.error('❌ Failed to start Spectator API:', err.message);
@@ -74,6 +75,11 @@ client.once(Events.ClientReady, async (c) => {
   }, 3000);
 
   console.log('⭐ XP and streak tracking active');
+
+  // Initialize account linker
+  console.log('🔗 Initializing account linker...');
+  const AccountLinker = require('./services/accountLinker');
+  client.accountLinker = new AccountLinker(client);
 });
 
 const commandHandler = new CommandHandler(client);
@@ -81,7 +87,76 @@ commandHandler.registerCommands();
 
 client.on(Events.MessageCreate, async (message) => {
   if (message.author.bot) return;
-  if (!message.guild) return;
+
+  // Handle DMs
+  if (!message.guild) {
+    // Check for account linking first
+    if (client.accountLinker?.handleDMReply(message)) {
+      return; // Was a link reply
+    }
+
+    // Handle invite/help/setup/uninstall requests in DMs
+    const dmContent = message.content.toLowerCase().trim();
+    if (['invite', 'add', 'help', 'setup', 'install', 'uninstall', 'remove', 'start'].includes(dmContent) ||
+      dmContent.startsWith('!invite') || dmContent.startsWith('!help') || dmContent.startsWith('!setup')) {
+
+      // Get bot client ID for invite link
+      const clientId = process.env.DISCORD_CLIENT_ID || client.user?.id;
+      const inviteUrl = clientId
+        ? `https://discord.com/api/oauth2/authorize?client_id=${clientId}&permissions=3088&scope=bot`
+        : '(Invite link unavailable - contact bot owner)';
+
+      const helpEmbed = {
+        color: 0x00ccff,
+        title: '🤖 Coast Live Beacon Bot',
+        description: 'Your community engagement and gaming companion!',
+        fields: [
+          {
+            name: '📥 Add to Your Server',
+            value: `[Click here to invite me](${inviteUrl})\n\n` +
+              `**Requirements:**\n` +
+              `• You need **Manage Server** permission\n` +
+              `• Grant the requested permissions when prompted`,
+            inline: false
+          },
+          {
+            name: '⚙️ Recommended Setup',
+            value: `**1.** Create a private \`#bot-config\` channel (admins only)\n` +
+              `**2.** Create a \`#bot-commands\` channel for users\n` +
+              `**3.** Use \`!help\` in your server to see all commands\n` +
+              `**4.** Configure with \`!config\` in your private channel`,
+            inline: false
+          },
+          {
+            name: '🗑️ Uninstall / Remove Bot',
+            value: `**To remove from your server:**\n` +
+              `1. Go to Server Settings → Integrations\n` +
+              `2. Find "Coast Live Beacon"\n` +
+              `3. Click "Manage" → "Remove Integration"\n\n` +
+              `*This removes the bot but keeps your data safe.*`,
+            inline: false
+          },
+          {
+            name: '📚 Quick Commands',
+            value: `\`!help\` - Full command list\n` +
+              `\`!config\` - Bot configuration\n` +
+              `\`!lbg\` - Wildcard game commands`,
+            inline: false
+          }
+        ],
+        footer: {
+          text: 'DM me anytime with "help" or "invite" for this message!'
+        }
+      };
+
+      await message.reply({ embeds: [helpEmbed] });
+      return;
+    }
+
+    // Unknown DM - send a hint
+    await message.reply('👋 Hi! Type **help** or **invite** to learn how to add me to your server!');
+    return;
+  }
 
   // Award XP for messages (even non-commands)
   if (!message.content.startsWith('!')) {

@@ -94,6 +94,123 @@ class UserProfileStorage {
 
         return socials.length > 0 ? socials : null;
     }
+
+    // === DAILY USAGE TRACKING ===
+
+    // Get today's date string (for daily reset comparison)
+    _getToday() {
+        return new Date().toISOString().split('T')[0]; // "2024-12-30"
+    }
+
+    // Ensure daily tracking fields exist and reset if new day
+    _ensureDailyTracking(profile) {
+        const today = this._getToday();
+
+        // Reset if new day or fields don't exist
+        if (profile.lastActiveDate !== today) {
+            profile.lastActiveDate = today;
+            profile.gamesPlayedToday = 0;
+            profile.songsRequestedToday = 0;
+        }
+
+        // Ensure fields exist
+        if (typeof profile.gamesPlayedToday !== 'number') profile.gamesPlayedToday = 0;
+        if (typeof profile.songsRequestedToday !== 'number') profile.songsRequestedToday = 0;
+
+        return profile;
+    }
+
+    // Check if user can play a Beacon game (returns { allowed, remaining, used, max })
+    canPlayBeacon(guildId, userId, isBirthday = false) {
+        const profile = this.getProfile(guildId, userId) || {};
+        this._ensureDailyTracking(profile);
+
+        const max = isBirthday ? 7 : 5; // 5 base, +2 for birthday
+        const used = profile.gamesPlayedToday || 0;
+        const remaining = Math.max(0, max - used);
+
+        return {
+            allowed: used < max,
+            remaining,
+            used,
+            max
+        };
+    }
+
+    // Record a Beacon game play
+    recordBeaconGame(guildId, userId, username) {
+        const data = this.getData();
+        const key = guildId + '_' + userId;
+
+        if (!data.users[key]) {
+            data.users[key] = {
+                guildId,
+                userId,
+                username,
+                createdAt: Date.now()
+            };
+        }
+
+        this._ensureDailyTracking(data.users[key]);
+        data.users[key].gamesPlayedToday = (data.users[key].gamesPlayedToday || 0) + 1;
+        data.users[key].totalBeaconGames = (data.users[key].totalBeaconGames || 0) + 1;
+        data.users[key].updatedAt = Date.now();
+
+        this.saveData(data);
+        return data.users[key];
+    }
+
+    // Check if user can request a song (returns { allowed, remaining, used, max })
+    canRequestSong(guildId, userId, isBirthday = false) {
+        const profile = this.getProfile(guildId, userId) || {};
+        this._ensureDailyTracking(profile);
+
+        const max = isBirthday ? 7 : 5; // 5 base, +2 for birthday
+        const used = profile.songsRequestedToday || 0;
+        const remaining = Math.max(0, max - used);
+
+        return {
+            allowed: used < max,
+            remaining,
+            used,
+            max
+        };
+    }
+
+    // Record a song request
+    recordSongRequest(guildId, userId, username) {
+        const data = this.getData();
+        const key = guildId + '_' + userId;
+
+        if (!data.users[key]) {
+            data.users[key] = {
+                guildId,
+                userId,
+                username,
+                createdAt: Date.now()
+            };
+        }
+
+        this._ensureDailyTracking(data.users[key]);
+        data.users[key].songsRequestedToday = (data.users[key].songsRequestedToday || 0) + 1;
+        data.users[key].totalSongRequests = (data.users[key].totalSongRequests || 0) + 1;
+        data.users[key].updatedAt = Date.now();
+
+        this.saveData(data);
+        return data.users[key];
+    }
+
+    // Get user's daily status summary
+    getDailyStatus(guildId, userId, isBirthday = false) {
+        const games = this.canPlayBeacon(guildId, userId, isBirthday);
+        const songs = this.canRequestSong(guildId, userId, isBirthday);
+
+        return {
+            games,
+            songs,
+            isBirthday
+        };
+    }
 }
 
 module.exports = UserProfileStorage;

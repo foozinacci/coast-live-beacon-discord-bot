@@ -8,6 +8,9 @@ const http = require('http');
 const path = require('path');
 const WebSocket = require('ws');
 
+// Import Beacon game engine
+const { createBeaconGame } = require('../game');
+
 class WildcardAPI {
     constructor(wildcardGame, port = 3000) {
         this.wildcardGame = wildcardGame;
@@ -20,6 +23,16 @@ class WildcardAPI {
         this.wss = new WebSocket.Server({ server: this.server });
         this.lobbyClients = new Map(); // roomCode -> Set of WebSocket clients
         this.lobbyPlayers = new Map(); // roomCode -> Array of players
+
+        // === BEACON GAME ENGINE ===
+        this.beaconClients = new Set(); // WebSocket clients connected to beacon
+        this.beaconGame = createBeaconGame((state) => {
+            // Broadcast state to all beacon clients
+            this.broadcastToBeacon({
+                type: 'state_update',
+                state: state
+            });
+        });
 
         this.setupWebSocket();
         this.setupRoutes();
@@ -43,6 +56,8 @@ class WildcardAPI {
                 for (const [code, clients] of this.lobbyClients) {
                     clients.delete(ws);
                 }
+                // Remove from beacon clients
+                this.beaconClients.delete(ws);
             });
         });
     }
@@ -52,7 +67,7 @@ class WildcardAPI {
 
         switch (type) {
             case 'join_room':
-                // Client (arena3d.html) joining a room
+                // Client (beacon.html) joining a room
                 if (!this.lobbyClients.has(roomCode)) {
                     this.lobbyClients.set(roomCode, new Set());
                     this.lobbyPlayers.set(roomCode, []);
@@ -64,6 +79,19 @@ class WildcardAPI {
                 ws.send(JSON.stringify({
                     type: 'players_update',
                     players: this.lobbyPlayers.get(roomCode) || []
+                }));
+                break;
+
+            case 'join_beacon':
+                // Client (beacon.html) connecting to game engine
+                console.log('🎮 Beacon client connected');
+                this.beaconClients.add(ws);
+                ws.isBeaconClient = true;
+
+                // Send current state immediately
+                ws.send(JSON.stringify({
+                    type: 'full_state',
+                    state: this.beaconGame.getState()
                 }));
                 break;
         }
@@ -114,6 +142,17 @@ class WildcardAPI {
 
         const msg = JSON.stringify(message);
         clients.forEach(ws => {
+            if (ws.readyState === WebSocket.OPEN) {
+                ws.send(msg);
+            }
+        });
+    }
+
+    broadcastToBeacon(message) {
+        if (this.beaconClients.size === 0) return;
+
+        const msg = JSON.stringify(message);
+        this.beaconClients.forEach(ws => {
             if (ws.readyState === WebSocket.OPEN) {
                 ws.send(msg);
             }
@@ -266,11 +305,18 @@ class WildcardAPI {
         // Arena view - animated battle visualization
         // Usage: http://localhost:3005/arena or /arena/gsq_zeus
         this.app.get('/arena', (req, res) => {
-            res.sendFile(path.join(__dirname, '../public/arena.html'));
+            res.sendFile(path.join(__dirname, '../public/beacon.html'));
         });
 
         this.app.get('/arena/:channel', (req, res) => {
-            res.sendFile(path.join(__dirname, '../public/arena.html'));
+            res.sendFile(path.join(__dirname, '../public/beacon.html'));
+        });
+
+        // === BEACON (New Architecture) ===
+        // Pure renderer that connects to state engine via WebSocket
+        // Usage: http://localhost:3005/beacon
+        this.app.get('/beacon', (req, res) => {
+            res.sendFile(path.join(__dirname, '../public/beacon.html'));
         });
 
         // API: Get active game code for a Twitch channel
