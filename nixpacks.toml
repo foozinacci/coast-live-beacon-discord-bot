@@ -1,8 +1,5 @@
+# Railway nixpacks config
+providers = ["node"]
+
 [phases.setup]
-nixPkgs = ["nodejs_20", "python3", "ffmpeg"]
-
-[phases.install]
-cmds = ["npm ci"]
-
-[start]
-cmd = "npm start"
+aptPkgs = ["python3", "ffmpeg"]
