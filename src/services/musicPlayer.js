@@ -10,7 +10,7 @@ const {
 const { EmbedBuilder } = require('discord.js');
 const QueueStorage = require('../utils/queueStorage');
 const play = require('play-dl');
-const youtubedl = require('youtube-dl-exec');
+// youtube-dl-exec removed - using play-dl instead for Railway compatibility
 const { Readable } = require('stream');
 
 class MusicPlayer {
@@ -169,34 +169,13 @@ class MusicPlayer {
                 videoUrl = searched[0].url;
             }
 
-            console.log('🎵 Getting audio URL via yt-dlp:', videoUrl);
+            console.log('🎵 Getting audio stream via play-dl:', videoUrl);
 
-            // Use youtube-dl-exec to get direct audio URL
-            const info = await youtubedl(videoUrl, {
-                dumpSingleJson: true,
-                noCheckCertificates: true,
-                noWarnings: true,
-                preferFreeFormats: true,
-                addHeader: ['referer:youtube.com', 'user-agent:Mozilla/5.0']
-            }, { windowsHide: true });
+            // Use play-dl to get audio stream (Railway compatible - no native binaries)
+            const audioStream = await play.stream(videoUrl);
 
-            // Find best audio format - prioritize higher bitrate
-            const audioFormats = info.formats.filter(f =>
-                f.acodec !== 'none' && f.vcodec === 'none'
-            ).sort((a, b) => (b.abr || 0) - (a.abr || 0));
-
-            const audioFormat = audioFormats[0] || info.formats.find(f => f.acodec !== 'none');
-
-            if (!audioFormat || !audioFormat.url) {
-                console.error('No audio format found');
-                this.playNext(guildId);
-                return;
-            }
-
-            console.log('🎵 Audio format:', audioFormat.acodec, (audioFormat.abr || 'unknown') + 'kbps');
-
-            const stream = createAudioResource(audioFormat.url, {
-                inputType: StreamType.Arbitrary
+            const stream = createAudioResource(audioStream.stream, {
+                inputType: audioStream.type
             });
 
             playerData.current = track;
