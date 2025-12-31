@@ -62,14 +62,19 @@ client.once(Events.ClientReady, async (c) => {
   client.wildcardGame = new WildcardGame(client);
 
   // Start API server immediately (Railway needs it fast)
-  try {
-    console.log('🌐 Starting Wildcard Spectator API...');
-    const WildcardAPI = require('./api/wildcardAPI');
-    const apiPort = process.env.PORT || 3005;
-    client.wildcardAPI = new WildcardAPI(client.wildcardGame, apiPort);
-    client.wildcardAPI.start();
-  } catch (err) {
-    console.error('❌ Failed to start Spectator API:', err.message);
+  // Skip if pre-login server is already running
+  if (!global.preLoginServer) {
+    try {
+      console.log('🌐 Starting Wildcard Spectator API...');
+      const WildcardAPI = require('./api/wildcardAPI');
+      const apiPort = process.env.PORT || 3005;
+      client.wildcardAPI = new WildcardAPI(client.wildcardGame, apiPort);
+      client.wildcardAPI.start();
+    } catch (err) {
+      console.error('❌ Failed to start Spectator API:', err.message);
+    }
+  } else {
+    console.log('🌐 Pre-login API already running, skipping duplicate startup');
   }
 
   console.log('⭐ XP and streak tracking active');
