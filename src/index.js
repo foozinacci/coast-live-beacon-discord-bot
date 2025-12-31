@@ -291,6 +291,45 @@ healthServer.listen(apiPort, '0.0.0.0', () => {
   console.log('✅ Server is LISTENING and ready for requests');
 });
 
+// WebSocket server for beacon overlay
+const WebSocket = require('ws');
+const wss = new WebSocket.Server({ server: healthServer });
+
+wss.on('connection', (ws) => {
+  console.log('🔌 WebSocket client connected');
+
+  // Send initial state
+  ws.send(JSON.stringify({
+    type: 'connected',
+    message: 'Connected to Beacon Arena server'
+  }));
+
+  ws.on('message', (data) => {
+    try {
+      const message = JSON.parse(data);
+      console.log('📨 WebSocket message:', message.type);
+    } catch (e) {
+      console.log('📨 WebSocket raw message:', data.toString());
+    }
+  });
+
+  ws.on('close', () => {
+    console.log('🔌 WebSocket client disconnected');
+  });
+});
+
+// Expose WebSocket server globally for game updates
+global.wss = wss;
+global.broadcastGameState = (state) => {
+  wss.clients.forEach(client => {
+    if (client.readyState === WebSocket.OPEN) {
+      client.send(JSON.stringify(state));
+    }
+  });
+};
+
+console.log('🔌 WebSocket server attached to health server');
+
 // Keepalive logging every 5 seconds
 setInterval(() => {
   console.log(`💓 Alive - uptime: ${Math.floor(process.uptime())}s`);
