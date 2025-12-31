@@ -340,13 +340,21 @@ global.healthServer = healthServer;
 // Login to Discord with error handling
 console.log('🔑 Attempting Discord login...');
 console.log(`🔑 Token starts with: ${process.env.DISCORD_TOKEN ? process.env.DISCORD_TOKEN.substring(0, 10) + '...' : 'NOT SET'}`);
+console.log(`🔑 Token length: ${process.env.DISCORD_TOKEN ? process.env.DISCORD_TOKEN.length : 0}`);
+
+// Timeout to detect hanging login
+const loginTimeout = setTimeout(() => {
+  console.error('⏱️ Discord login TIMEOUT after 30 seconds - login is hanging!');
+}, 30000);
 
 client.login(process.env.DISCORD_TOKEN)
   .then(() => {
+    clearTimeout(loginTimeout);
     console.log('✅ Discord login initiated successfully');
   })
   .catch(err => {
+    clearTimeout(loginTimeout);
     console.error('❌ Discord login failed:', err.message);
-    console.error('❌ Full error:', err);
+    console.error('❌ Error code:', err.code);
     console.error('⚠️ Bot features disabled, but API still running');
   });
