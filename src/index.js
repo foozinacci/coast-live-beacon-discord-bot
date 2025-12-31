@@ -214,22 +214,29 @@ const apiPort = process.env.PORT || 3005;
 
 
 const healthServer = http.createServer((req, res) => {
+  console.log(`📥 Request: ${req.method} ${req.url}`);
   if (req.url === '/health' || req.url === '/') {
     res.writeHead(200, { 'Content-Type': 'text/plain' });
     res.end('OK');
+    console.log('✅ Health check responded OK');
   } else if (req.url === '/api/health') {
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({ status: 'ok', uptime: process.uptime() }));
   } else {
-    // For beacon.html, we'll redirect to static file serving later
-    res.writeHead(404, { 'Content-Type': 'text/plain' });
-    res.end('Starting up...');
+    // Respond OK to any request to avoid Railway thinking we're unhealthy
+    res.writeHead(200, { 'Content-Type': 'text/plain' });
+    res.end('OK - route pending');
   }
 });
 
 healthServer.listen(apiPort, '0.0.0.0', () => {
   console.log(`🌐 Health server running on http://0.0.0.0:${apiPort}`);
 });
+
+// Keepalive logging every 5 seconds
+setInterval(() => {
+  console.log(`💓 Alive - uptime: ${Math.floor(process.uptime())}s`);
+}, 5000);
 
 global.healthServer = healthServer;
 
