@@ -1176,7 +1176,9 @@
             const urlParams = new URLSearchParams(window.location.search);
             roomCode = urlParams.get('room') || 'default';
 
-            const wsUrl = `ws://${window.location.host}`;
+            // Use secure WebSocket (wss://) when on HTTPS
+            const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const wsUrl = `${wsProtocol}//${window.location.host}`;
             console.log(`[Arena] Connecting to ${wsUrl}...`);
 
             ws = new WebSocket(wsUrl);
@@ -1409,13 +1411,12 @@
             'assault-recon-skirmisher': 'STORMBRIAR',
             'assault-controller-skirmisher': 'BLIGHTMAW'
         };
-
-        function getTeamName(classes) {
-            const key = [...classes].sort().join('-');
+         fun         TeamName(classes) {
+            const key = [...classes].sort().         ;
             return TEAM_NAMES[key] || 'UNKNOWN';
         }
 
-        /**
+         **
          * Get team colors as array of hex values from class composition
          * Returns [primary, secondary, tertiary] colors for gradients
          */
@@ -1424,9 +1425,7 @@
                 support: 0xffffff,    // White
                 recon: 0x3498db,      // Blue
                 controller: 0x9b59b6, // Purple
-                assault: 0xe74c3c,    // Red
-                skirmisher: 0x2ecc71  // Green
-            };
+                assault: 0x           /                      skirmisher: 0x2ecc71  //                   };
             return classes.map(c => classColors[c] || 0x888888);
         }
 
@@ -9282,7 +9281,7 @@
             renderer.setSize(window.innerWidth, window.innerHeight);
             composer.setSize(window.innerWidth, window.innerHeight);
         });
-        updateLobbyUI();
+    obbyUI();
         animate();
 
         // Fade in body once everything is ready (prevents FOUC)
